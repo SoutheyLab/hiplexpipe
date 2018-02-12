@@ -143,7 +143,6 @@ class Stages(object):
                         bam_in=bam_in, sbam_out=sbam_out)
         run_stage(self.state, 'primary_bam', command)
 
-    # index sorted bam file
     def index_sort_bam_picard(self, bam_in, bam_index):
         '''Index sorted bam using samtools'''
         command = 'samtools index {bam_in} {bam_index}'.format(
@@ -154,7 +153,6 @@ class Stages(object):
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
         safe_make_dir('variants/gatk')
-        # safe_make_dir('variants}'.format(sample=sample_id))
         gatk_args = "-T HaplotypeCaller -R {reference} --min_base_quality_score 20 " \
                     "--emitRefConfidence GVCF " \
                     "-A AlleleBalance -A AlleleBalanceBySample " \
@@ -176,7 +174,6 @@ class Stages(object):
 
     def combine_gvcf_gatk(self, vcf_files_in, vcf_out):
         '''Combine G.VCF files for all samples using GATK'''
-        # g_vcf_files = ' '.join(['--variant ' + vcf for vcf in vcf_files_in])
         merge_commands = []
         temp_merge_outputs = []
         for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 200.0))):
@@ -318,28 +315,16 @@ class Stages(object):
         self.run_gatk('left_align_split_multi_allelics', gatk_args)
 
 
-#    def apply_vep(self, inputs, vcf_out):
-#        '''Apply VEP'''
-#        vcf_in = inputs
-#        cores = self.get_stage_options('apply_vep', 'cores')
-#        vep_command = "vep --cache --dir_cache {other_vep} --assembly GRCh37 --refseq --offline --fasta {reference} " \
-#                    "-i {vcf_in} --sift b --polyphen b --symbol --numbers --biotype --total_length --hgvs " \
-#                    "--format vcf -o {vcf_vep} --force_overwrite --vcf " \
-#                    "--fields Consequence,Codons,Amino_acids,Gene,SYMBOL,Feature,EXON,PolyPhen,SIFT," \
-#                    "Protein_position,BIOTYPE,HGVSc,HGVSp,cDNA_position,CDS_position,HGVSc,HGVSp,cDNA_position,CDS_position,PICK " \
-#                    "--fork {threads} --flag_pick".format(
-#                    reference=self.reference, vcf_in=vcf_in, vcf_vep=vcf_out, other_vep=self.other_vep, threads=cores)
-#        run_stage(self.state, 'apply_vep', vep_command)
-
     def apply_vep(self, inputs, vcf_out):
         '''Apply VEP'''
-        vcf_in = inputs
+        vcf_in, [undr_rover_vcf] = inputs
         cores = self.get_stage_options('apply_vep', 'cores')
         vep_command = "vep --cache --dir_cache {other_vep} " \
                       "--assembly GRCh37 --refseq --offline " \
                       "--fasta {reference} " \
                       "--sift b --polyphen b --symbol --numbers --biotype --total_length --hgvs --format vcf " \
                       "--vcf --force_overwrite --flag_pick --no_stats " \
+                      "--custom {undr_rover_vcf},undrrover,vcf,exact,0,Sample,PCT " \ 
                       "--custom {brcaexpath},brcaex,vcf,exact,0,Clinical_significance_ENIGMA,Comment_on_clinical_significance_ENIGMA,Date_last_evaluated_ENIGMA,Pathogenicity_expert,HGVS_cDNA,HGVS_Protein,BIC_Nomenclature " \
                       "--custom {gnomadpath},gnomAD,vcf,exact,0,AF_NFE,AN_NFE " \
                       "--custom {revelpath},RVL,vcf,exact,0,REVEL_SCORE " \
@@ -362,7 +347,8 @@ class Stages(object):
                                             exacpath=self.exac, 
                                             dbnsfppath=self.dbnsfp, 
                                             dbscsnvpath=self.dbscsnv, 
-                                            caddpath=self.cadd)
+                                            caddpath=self.cadd,
+                                            undr_rover_vcf=undr_rover_vcf)
         run_stage(self.state, 'apply_vep', vep_command)
 
 
@@ -399,21 +385,30 @@ class Stages(object):
                         bam_in=bam_in, txt_out=txt_out)
         run_stage(self.state, 'total_reads', command)
 
-#    def generate_stats(self, inputs, txt_out):
-#        '''run R stats script'''
-#        a, b, c, d, e = inputs
-#        command = 'Rscript --vanilla /projects/vh83/pipelines/code/modified_summary_stat.R \
-#                    {hist_in} {map_genome_in} {map_target_in} {raw_reads_in} {sample_name} \
-#                    {txt_out}'.format(hist_in=a, map_genome_in=b, map_target_in=c, raw_reads_in=d , sample_name=e , txt_out=txt_out)
-#        run_stage(self.state, 'generate_stats', command)
 
-#Rscript --vanilla ~/vh83/pipelines/code/summary_stat.R \
-#        metrics/${sample_run_name}.sort.bedtools_hist_all.txt \
-#        metrics/${sample_run_name}.sort.mapped_to_genome.txt \
-#        metrics/${sample_run_name}.sort.mapped_to_target.txt \
-#        metrics/${sample_run_name}.sort.total_raw_reads.txt \
-#        ${sample_run_name} \
-#        ${summary_prefix}_summary_coverage.txt
+# Generate stats collate stage
+    def generate_stats(self, inputs, txt_out, samplename, joint_output):
+        '''run R stats script'''
+        # Assigning inputfiles to correct variables based on suffix
+        for inputfile in inputs:
+            if inputfile.endswith('.bedtools_hist_all.txt'):
+                a = inputfile
+            elif inputfile.endswith('.mapped_to_genome.txt'):
+                b = inputfile
+            elif inputfile.endswith('.mapped_to_target.txt'):
+                c = inputfile
+            elif inputfile.endswith('.total_raw_reads.txt'):
+                d = inputfile
+        e = samplename
+        command = 'Rscript --vanilla /projects/vh83/pipelines/code/modified_summary_stat.R ' \
+                  '{hist_in} {map_genome_in} {map_target_in} {raw_reads_in} {sample_name} ' \
+                  '{txt_out}'.format(hist_in=a, 
+                                      map_genome_in=b, 
+                                      map_target_in=c, 
+                                      raw_reads_in=d , 
+                                      sample_name=e , 
+                                      txt_out=joint_output)
+        run_stage(self.state, 'generate_stats', command)
 
     def sort_vcfs(self, vcf_in, vcf_out):
         '''sort undr_rover vcf files'''

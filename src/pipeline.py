@@ -122,13 +122,13 @@ def make_pipeline(state):
         filter=suffix('.clipped.bam'),
         output='.total_raw_reads.txt')
 
-#    pipeline.transform(
-#        task_func=stages.generate_stats,
-#        name='generate_stats',
-#        input=output_from(['coverage_bed', 'genome_reads', 'target_reads', 'total_reads']), 
-#        filter=formatter('.+/(?P<sample>.+).txt'),
-#        extras=['{sample[0]}'],
-#        output='all_sample.summary.txt')
+    pipeline.collate(
+        task_func=stages.generate_stats,
+        name='generate_stats',
+        input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'), 
+        filter=regex(r'.+/(.+BS\d\d\d\d\d\d.+S\d+)\..+\.txt'),
+        output=r'all_sample.summary.\1.txt',
+        extras=[r'\1', 'all_sample.summary.txt'])
 
     ###### GATK VARIANT CALLING ######
     # Call variants using GATK
@@ -210,15 +210,15 @@ def make_pipeline(state):
         filter=suffix('.raw.annotate.filtered.merged.vcf'),
         output='.raw.annotate.filtered.merged.split_multi.vcf')
 
-
      #Apply VEP 
     (pipeline.transform(
         task_func=stages.apply_vep,
         name='apply_vep',
         input=output_from('left_align_split_multi_allelics'),
         filter=suffix('.raw.annotate.filtered.merged.split_multi.vcf'),
+        add_inputs=add_inputs(['variants/undr_rover/combined_undr_rover.vcf.gz'])
         output='.raw.annotate.filtered.merged.split_multi.vep.vcf')
-        .follows('left_align_split_multi_allelics'))
+        .follows('index_final_vcf'))
 
 #### concatenate undr_rover vcfs ####
 
