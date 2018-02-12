@@ -126,7 +126,7 @@ def make_pipeline(state):
         task_func=stages.generate_stats,
         name='generate_stats',
         input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'), 
-        filter=regex(r'.+/(.+BS\d\d\d\d\d\d.+S\d+)\..+\.txt'),
+        filter=regex(r'.+/(.+BS\d{4,6}.+S\d+)\..+\.txt'),
         output=r'all_sample.summary.\1.txt',
         extras=[r'\1', 'all_sample.summary.txt'])
 
