@@ -324,7 +324,7 @@ class Stages(object):
                       "--fasta {reference} " \
                       "--sift b --polyphen b --symbol --numbers --biotype --total_length --hgvs --format vcf " \
                       "--vcf --force_overwrite --flag_pick --no_stats " \
-                      "--custom {undr_rover_vcf},undrrover,vcf,exact,0,Sample,PCT " \ 
+                      "--custom {undr_rover_vcf},undrrover,vcf,exact,0,Sample,PCT " \
                       "--custom {brcaexpath},brcaex,vcf,exact,0,Clinical_significance_ENIGMA,Comment_on_clinical_significance_ENIGMA,Date_last_evaluated_ENIGMA,Pathogenicity_expert,HGVS_cDNA,HGVS_Protein,BIC_Nomenclature " \
                       "--custom {gnomadpath},gnomAD,vcf,exact,0,AF_NFE,AN_NFE " \
                       "--custom {revelpath},RVL,vcf,exact,0,REVEL_SCORE " \
