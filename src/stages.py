@@ -385,6 +385,17 @@ class Stages(object):
                         bam_in=bam_in, txt_out=txt_out)
         run_stage(self.state, 'total_reads', command)
 
+    def generate_amplicon_metrics(self, bam_in, txt_out, sample):
+        '''Generate depth information for each amplicon and sample for heatmap plotting'''
+        safe_make_dir('alignments/metrics')
+        command = 'bedtools coverage -f 5E-1 -a {bed_intervals} -b {bam_in} | ' \
+                  'sed "s/$/	{sample}/g" > {txt_out}'.format(bed_intervals=self.interval_file,
+                                                            bam_in=bam_in,
+                                                            sample=sample,
+                                                            txt_out=txt_out)
+        run_stage(self.state, 'generate_amplicon_metrics', command)
+
+
 
 # Generate stats collate stage
     def generate_stats(self, inputs, txt_out, samplename, joint_output):
