@@ -126,7 +126,7 @@ class Stages(object):
                         coverfile=coverfile,
                         fastq_read1=fastq_read1_in,
                         fastq_read2=fastq_read2_in)
-        run_stage(self.state, 'apply_undr_rover', command)
+#        run_stage(self.state, 'apply_undr_rover', command)
 
     def sort_bam_picard(self, bam_in, sorted_bam_out):
         '''Sort the BAM file using Picard'''
@@ -324,7 +324,7 @@ class Stages(object):
                       "--fasta {reference} " \
                       "--sift b --polyphen b --symbol --numbers --biotype --total_length --hgvs --format vcf " \
                       "--vcf --force_overwrite --flag_pick --no_stats " \
-                      "--custom {undr_rover_vcf},undrrover,vcf,exact,0,Sample,PCT " \
+#                      "--custom {undr_rover_vcf},undrrover,vcf,exact,0,Sample,PCT " \
                       "--custom {brcaexpath},brcaex,vcf,exact,0,Clinical_significance_ENIGMA,Comment_on_clinical_significance_ENIGMA,Date_last_evaluated_ENIGMA,Pathogenicity_expert,HGVS_cDNA,HGVS_Protein,BIC_Nomenclature " \
                       "--custom {gnomadpath},gnomAD,vcf,exact,0,AF_NFE,AN_NFE " \
                       "--custom {revelpath},RVL,vcf,exact,0,REVEL_SCORE " \
@@ -348,7 +348,7 @@ class Stages(object):
                                             dbnsfppath=self.dbnsfp, 
                                             dbscsnvpath=self.dbscsnv, 
                                             caddpath=self.cadd,
-                                            undr_rover_vcf=undr_rover_vcf)
+ #                                           undr_rover_vcf=undr_rover_vcf)
         run_stage(self.state, 'apply_vep', vep_command)
 
 
@@ -424,12 +424,12 @@ class Stages(object):
     def sort_vcfs(self, vcf_in, vcf_out):
         '''sort undr_rover vcf files'''
         command = 'bcftools sort -o {vcf_out} -O z {vcf_in}'.format(vcf_out=vcf_out, vcf_in=vcf_in)
-        run_stage(self.state, 'sort_vcfs', command)
+#        run_stage(self.state, 'sort_vcfs', command)
     
     def index_vcfs(self, vcf_in, vcf_out):
         command = 'bcftools index -f --tbi {vcf_in}'.format(vcf_in=vcf_in)
-        run_stage(self.state, 'index_vcfs', command)
-    
+#        run_stage(self.state, 'index_vcfs', command)
+   
     def concatenate_vcfs(self, vcf_files_in, vcf_out):
         merge_commands = []
         temp_merge_outputs = []
@@ -447,11 +447,11 @@ class Stages(object):
 
         merge_commands.append(command2)
         final_command = ''.join(merge_commands)
-        run_stage(self.state, 'concatenate_vcfs', final_command)
+#        run_stage(self.state, 'concatenate_vcfs', final_command)
 
     def index_final_vcf(self, vcf_in, vcf_out):
         command = 'bcftools index -f --tbi {vcf_in}'.format(vcf_in=vcf_in)
-        run_stage(self.state, 'index_final_vcf', command)
+#        run_stage(self.state, 'index_final_vcf', command)
 
 
 

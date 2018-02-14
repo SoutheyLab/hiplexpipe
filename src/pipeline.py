@@ -219,14 +219,29 @@ def make_pipeline(state):
         output='.raw.annotate.filtered.merged.split_multi.vcf')
 
      #Apply VEP 
+#    (pipeline.transform(
+#        task_func=stages.apply_vep,
+#        name='apply_vep',
+#        input=output_from('left_align_split_multi_allelics'),
+#        filter=suffix('.raw.annotate.filtered.merged.split_multi.vcf'),
+#        add_inputs=add_inputs(['variants/undr_rover/combined_undr_rover.vcf.gz']),
+#        output='.raw.annotate.filtered.merged.split_multi.vep.vcf')
+#        .follows('index_final_vcf'))
+
+
+     #Apply VEP 
     (pipeline.transform(
         task_func=stages.apply_vep,
         name='apply_vep',
         input=output_from('left_align_split_multi_allelics'),
         filter=suffix('.raw.annotate.filtered.merged.split_multi.vcf'),
-        add_inputs=add_inputs(['variants/undr_rover/combined_undr_rover.vcf.gz']),
         output='.raw.annotate.filtered.merged.split_multi.vep.vcf')
-        .follows('index_final_vcf'))
+        .follows('left_align_split_multi_allelics'))
+
+
+
+
+
 
 #### concatenate undr_rover vcfs ####
 
