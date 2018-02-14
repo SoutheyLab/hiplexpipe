@@ -115,6 +115,7 @@ class Stages(object):
                   '--proportionthresh {proportionthresh} ' \
                   '--absthresh {absthresh} ' \
                   '--max_variants {maxvariants} ' \
+                  '--fast --SNVthresh 5 ' \
                   '{fastq_read1} {fastq_read2}'.format(
                         coord_file=self.coord_file, primer_file=self.primer_file,
                         reference=self.reference,
