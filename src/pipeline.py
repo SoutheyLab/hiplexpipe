@@ -2,7 +2,7 @@
 Build the pipeline workflow by plumbing the stages together.
 '''
 
-from ruffus import Pipeline, suffix, formatter, add_inputs, output_from
+from ruffus import Pipeline, suffix, formatter, add_inputs, output_from, regex
 from stages import Stages
 
 
@@ -88,6 +88,14 @@ def make_pipeline(state):
 
     # generate mapping metrics.
     pipeline.transform(
+        task_func=stages.generate_amplicon_metrics,
+        name='generate_amplicon_metrics',
+        input=output_from('primary_bam'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
+        output='alignments/metrics/{sample[0]}.amplicon-metrics.txt',
+        extras=['{sample[0]}'])
+
+    pipeline.transform(
         task_func=stages.intersect_bed,
         name='intersect_bed',
         input=output_from('primary_bam'),
@@ -122,13 +130,13 @@ def make_pipeline(state):
         filter=suffix('.clipped.bam'),
         output='.total_raw_reads.txt')
 
-#    pipeline.transform(
-#        task_func=stages.generate_stats,
-#        name='generate_stats',
-#        input=output_from(['coverage_bed', 'genome_reads', 'target_reads', 'total_reads']), 
-#        filter=formatter('.+/(?P<sample>.+).txt'),
-#        extras=['{sample[0]}'],
-#        output='all_sample.summary.txt')
+    pipeline.collate(
+        task_func=stages.generate_stats,
+        name='generate_stats',
+        input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'), 
+        filter=regex(r'.+/(.+BS\d{4,6}.+S\d+)\..+\.txt'),
+        output=r'all_sample.summary.\1.txt',
+        extras=[r'\1', 'all_sample.summary.txt'])
 
     ###### GATK VARIANT CALLING ######
     # Call variants using GATK
@@ -163,13 +171,6 @@ def make_pipeline(state):
        filter=suffix('.raw.vcf'),
        output='.raw.annotate.vcf')
 
-#    # Apply VariantFiltration using GATK
-#    pipeline.transform(
-#        task_func=stages.apply_variant_filtration_gatk,
-#        name='apply_variant_filtration_gatk',
-#        input=output_from('variant_annotator_gatk'),
-#        filter=suffix('.raw.annotate.vcf'),
-#        output='.raw.annotate.filtered.vcf')
 
 #### split snps and indels for filtering ####
 
@@ -210,25 +211,22 @@ def make_pipeline(state):
         output='.raw.annotate.filtered.merged.vcf')
         .follows('apply_variant_filtration_indels_gatk'))
 
-
-
-#    # Apply VEP 
-#    (pipeline.transform(
-#        task_func=stages.apply_vep,
-#        name='apply_vep',
-#        input=output_from('apply_variant_filtration_gatk'),
-#        filter=suffix('.raw.annotate.filtered.vcf'),
-#        output='.raw.annotate.filtered.vep.vcf')
-#        .follows('apply_variant_filtration_gatk'))
+    pipeline.transform(
+        task_func=stages.left_align_split_multi_allelics,
+        name="left_align_split_multi_allelics",
+        input=output_from('merge_filtered_vcfs_gatk'),
+        filter=suffix('.raw.annotate.filtered.merged.vcf'),
+        output='.raw.annotate.filtered.merged.split_multi.vcf')
 
      #Apply VEP 
     (pipeline.transform(
         task_func=stages.apply_vep,
         name='apply_vep',
-        input=output_from('merge_filtered_vcfs_gatk'),
-        filter=suffix('.raw.annotate.filtered.merged.vcf'),
-        output='.raw.annotate.filtered.merged.vep.vcf')
-        .follows('merge_filtered_vcfs_gatk'))
+        input=output_from('left_align_split_multi_allelics'),
+        filter=suffix('.raw.annotate.filtered.merged.split_multi.vcf'),
+        add_inputs=add_inputs(['variants/undr_rover/combined_undr_rover.vcf.gz']),
+        output='.raw.annotate.filtered.merged.split_multi.vep.vcf')
+        .follows('index_final_vcf'))
 
 #### concatenate undr_rover vcfs ####
 

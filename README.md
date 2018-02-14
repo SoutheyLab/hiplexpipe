@@ -61,5 +61,13 @@ hiplexpipe --config pipeline.config --use_threads --log_file pipeline.log --jobs
 ```
 
 
+The following lines need to be added to your .bash_rofile so that VEP will function correctly.
+
+```
+PERL5LIB=$PERL5LIB:/projects/vh83/reference/annotation_databases/VEP_Modules/.vep/Plugins
+export PERL5LIB
+```
+
+
 [to be continued]
 

@@ -10,6 +10,7 @@ as config, options, DRMAA and the logger.
 from utils import safe_make_dir
 from runner import run_stage
 import os
+import math
 
 # PICARD_JAR = '$PICARD_HOME/lib/picard-1.69.jar'
 PICARD_JAR = '/usr/local/picard/2.9.2/picard.jar'
@@ -48,6 +49,16 @@ class Stages(object):
         self.absthresh = self.get_options('absthresh')
         self.maxvariants = self.get_options('maxvariants')
         self.other_vep = self.get_options('other_vep')
+        self.brcaex = self.get_options('vep_brcaex')
+        self.gnomad = self.get_options('vep_gnomad')
+        self.revel = self.get_options('vep_revel')
+        self.maxentscan = self.get_options('vep_maxentscan')
+        self.exac = self.get_options('vep_exac')
+        self.dbnsfp = self.get_options('vep_dbnsfp')
+        self.dbscsnv = self.get_options('vep_dbscsnv')
+        self.cadd = self.get_options('vep_cadd')
+
+
 
     def run_picard(self, stage, args):
         mem = int(self.state.config.get_stage_options(stage, 'mem'))
@@ -132,7 +143,6 @@ class Stages(object):
                         bam_in=bam_in, sbam_out=sbam_out)
         run_stage(self.state, 'primary_bam', command)
 
-    # index sorted bam file
     def index_sort_bam_picard(self, bam_in, bam_index):
         '''Index sorted bam using samtools'''
         command = 'samtools index {bam_in} {bam_index}'.format(
@@ -143,7 +153,6 @@ class Stages(object):
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
         safe_make_dir('variants/gatk')
-        # safe_make_dir('variants}'.format(sample=sample_id))
         gatk_args = "-T HaplotypeCaller -R {reference} --min_base_quality_score 20 " \
                     "--emitRefConfidence GVCF " \
                     "-A AlleleBalance -A AlleleBalanceBySample " \
@@ -165,12 +174,35 @@ class Stages(object):
 
     def combine_gvcf_gatk(self, vcf_files_in, vcf_out):
         '''Combine G.VCF files for all samples using GATK'''
-        g_vcf_files = ' '.join(['--variant ' + vcf for vcf in vcf_files_in])
-        gatk_args = "-T CombineGVCFs -R {reference} " \
-                    "--disable_auto_index_creation_and_locking_when_reading_rods " \
-                    "{g_vcf_files} -o {vcf_out}".format(reference=self.reference,
-                                                        g_vcf_files=g_vcf_files, vcf_out=vcf_out)
-        self.run_gatk('combine_gvcf_gatk', gatk_args)
+        merge_commands = []
+        temp_merge_outputs = []
+        for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 200.0))):
+            start = n * 200
+            filelist = vcf_files_in[start:start + 200]
+            filelist_command = ' '.join(['--variant ' + vcf for vcf in filelist])
+            temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
+            gatk_args_full = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
+                             "--disable_auto_index_creation_and_locking_when_reading_rods " \
+                             "{g_vcf_files} -o {vcf_out}; ".format(reference=self.reference, 
+                                                                   jar_path=GATK_JAR, 
+                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'), 
+                                                                   g_vcf_files=filelist_command, 
+                                                                   vcf_out=temp_merge_filename)
+            merge_commands.append(gatk_args_full)
+            temp_merge_outputs.append(temp_merge_filename)
+
+        final_merge_vcfs = ' '.join(['--variant ' + vcf for vcf in temp_merge_outputs])
+        gatk_args_full_final = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
+                               "--disable_auto_index_creation_and_locking_when_reading_rods " \
+                               "{g_vcf_files} -o {vcf_out}".format(reference=self.reference, 
+                                                                   jar_path=GATK_JAR, 
+                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'), 
+                                                                   g_vcf_files=final_merge_vcfs, 
+                                                                   vcf_out=vcf_out)
+
+        merge_commands.append(gatk_args_full_final)
+        final_command = ''.join(merge_commands)
+        run_stage(self.state, 'combine_gvcf_gatk', final_command)
 
     def genotype_gvcf_gatk(self, combined_vcf_in, vcf_out):
         '''Genotype G.VCF files using GATK'''
@@ -204,26 +236,6 @@ class Stages(object):
                     "--num_threads {cores} --variant {vcf_in} --out {vcf_out}" \
                     .format(reference=self.reference, cores=cores, vcf_in=vcf_in, vcf_out=vcf_out)
         self.run_gatk('variant_annotator_gatk', gatk_args)
-
-######  Variant splitting and filtering sections
-######  Original variant filtration command
-#    def apply_variant_filtration_gatk(self, inputs, vcf_out):
-#        '''Apply Variant Filtration using gatk'''
-#        vcf_in = inputs
-#        cores = self.get_stage_options('apply_variant_filtration_gatk', 'cores')
-#        gatk_args = "-T VariantFiltration --disable_auto_index_creation_and_locking_when_reading_rods " \
-#                    "-R {reference} " \
-#                    "--filterExpression \"QUAL < 30.0\" --filterName \"VeryLowQual\" " \
-#                    "--filterExpression \"QD < 2.0\" --filterName \"LowQD\" " \
-#                    "--filterExpression \"DP < 10\" --filterName \"LowCoverage\" " \
-#                    "--filterExpression \"MQ < 30.0\" --filterName \"LowMappingQual\" " \
-#                    "--filterExpression \"SOR > 4.0\" --filterName \"StrandBias\" " \
-#                    "--filterExpression \"HRun >= 7.0\" --filterName \"HRun7\" " \
-#                    "--filterExpression \"MQRankSum < -12.5\" --filterName \"MQRankSum\" " \
-#                    "--filterExpression \"ReadPosRankSum < -8.0\" --filterName \"ReadPosRankSum\" " \
-#                    "--variant {vcf_in} -o {vcf_out}".format(reference=self.reference,
-#                                                            cores=cores, vcf_in=vcf_in, vcf_out=vcf_out)
-#        self.run_gatk('apply_variant_filtration_gatk', gatk_args)
 
     def select_variants_snps_gatk(self, inputs, vcf_out):
         '''Extract SNPs from genotyped vcf'''
@@ -278,8 +290,6 @@ class Stages(object):
 
     def merge_filtered_vcfs_gatk(self, inputs, vcf_out):
         '''Merge filtered vcfs, snps and indels'''
-        # How this might work if used as a transform to the indel filtering stage (assuming snp filtering
-        # is also complete).
         snps_vcf, [indels_vcf] = inputs
         gatk_args = "-T CombineVariants " \
                     "-R {reference} " \
@@ -291,18 +301,54 @@ class Stages(object):
                                            vcf_out=vcf_out)
         self.run_gatk('merge_filtered_vcfs_gatk', gatk_args)
     
+    def left_align_split_multi_allelics(self, inputs, vcf_out):
+        '''Split multi allelic sites and left align variants'''
+        vcf_in = inputs
+        gatk_args = "-T LeftAlignAndTrimVariants " \
+                    "-R {reference} " \
+                    "-V {vcf_in} " \
+                    "-o {vcf_out} " \
+                    "--dontTrimAlleles " \
+                    "--splitMultiallelics ".format(reference=self.reference, 
+                                                   vcf_in=vcf_in, 
+                                                   vcf_out=vcf_out)
+        self.run_gatk('left_align_split_multi_allelics', gatk_args)
+
 
     def apply_vep(self, inputs, vcf_out):
         '''Apply VEP'''
-        vcf_in = inputs
+        vcf_in, [undr_rover_vcf] = inputs
         cores = self.get_stage_options('apply_vep', 'cores')
-        vep_command = "vep --cache --dir_cache {other_vep} --assembly GRCh37 --refseq --offline --fasta {reference} " \
-                    "-i {vcf_in} --sift b --polyphen b --symbol --numbers --biotype --total_length --hgvs " \
-                    "--format vcf -o {vcf_vep} --force_overwrite --vcf " \
-                    "--fields Consequence,Codons,Amino_acids,Gene,SYMBOL,Feature,EXON,PolyPhen,SIFT," \
-                    "Protein_position,BIOTYPE,HGVSc,HGVSp,cDNA_position,CDS_position,HGVSc,HGVSp,cDNA_position,CDS_position,PICK " \
-                    "--fork {threads} --flag_pick".format(
-                    reference=self.reference, vcf_in=vcf_in, vcf_vep=vcf_out, other_vep=self.other_vep, threads=cores)
+        vep_command = "vep --cache --dir_cache {other_vep} " \
+                      "--assembly GRCh37 --refseq --offline " \
+                      "--fasta {reference} " \
+                      "--sift b --polyphen b --symbol --numbers --biotype --total_length --hgvs --format vcf " \
+                      "--vcf --force_overwrite --flag_pick --no_stats " \
+                      "--custom {undr_rover_vcf},undrrover,vcf,exact,0,Sample,PCT " \
+                      "--custom {brcaexpath},brcaex,vcf,exact,0,Clinical_significance_ENIGMA,Comment_on_clinical_significance_ENIGMA,Date_last_evaluated_ENIGMA,Pathogenicity_expert,HGVS_cDNA,HGVS_Protein,BIC_Nomenclature " \
+                      "--custom {gnomadpath},gnomAD,vcf,exact,0,AF_NFE,AN_NFE " \
+                      "--custom {revelpath},RVL,vcf,exact,0,REVEL_SCORE " \
+                      "--plugin MaxEntScan,{maxentscanpath} " \
+                      "--plugin ExAC,{exacpath},AC,AN " \
+                      "--plugin dbNSFP,{dbnsfppath},REVEL_score,REVEL_rankscore " \
+                      "--plugin dbscSNV,{dbscsnvpath} " \
+                      "--plugin CADD,{caddpath} " \
+                      "--fork {cores} " \
+                      "-i {vcf_in} " \
+                      "-o {vcf_out}".format(other_vep=self.other_vep, 
+                                            cores=cores, 
+                                            vcf_out=vcf_out, 
+                                            vcf_in=vcf_in, 
+                                            reference=self.reference, 
+                                            brcaexpath=self.brcaex, 
+                                            gnomadpath=self.gnomad, 
+                                            revelpath=self.revel, 
+                                            maxentscanpath=self.maxentscan, 
+                                            exacpath=self.exac, 
+                                            dbnsfppath=self.dbnsfp, 
+                                            dbscsnvpath=self.dbscsnv, 
+                                            caddpath=self.cadd,
+                                            undr_rover_vcf=undr_rover_vcf)
         run_stage(self.state, 'apply_vep', vep_command)
 
 
@@ -339,21 +385,41 @@ class Stages(object):
                         bam_in=bam_in, txt_out=txt_out)
         run_stage(self.state, 'total_reads', command)
 
-#    def generate_stats(self, inputs, txt_out):
-#        '''run R stats script'''
-#        a, b, c, d, e = inputs
-#        command = 'Rscript --vanilla /projects/vh83/pipelines/code/modified_summary_stat.R \
-#                    {hist_in} {map_genome_in} {map_target_in} {raw_reads_in} {sample_name} \
-#                    {txt_out}'.format(hist_in=a, map_genome_in=b, map_target_in=c, raw_reads_in=d , sample_name=e , txt_out=txt_out)
-#        run_stage(self.state, 'generate_stats', command)
+    def generate_amplicon_metrics(self, bam_in, txt_out, sample):
+        '''Generate depth information for each amplicon and sample for heatmap plotting'''
+        safe_make_dir('alignments/metrics')
+        command = 'bedtools coverage -f 5E-1 -a {bed_intervals} -b {bam_in} | ' \
+                  'sed "s/$/	{sample}/g" > {txt_out}'.format(bed_intervals=self.interval_file,
+                                                            bam_in=bam_in,
+                                                            sample=sample,
+                                                            txt_out=txt_out)
+        run_stage(self.state, 'generate_amplicon_metrics', command)
 
-#Rscript --vanilla ~/vh83/pipelines/code/summary_stat.R \
-#        metrics/${sample_run_name}.sort.bedtools_hist_all.txt \
-#        metrics/${sample_run_name}.sort.mapped_to_genome.txt \
-#        metrics/${sample_run_name}.sort.mapped_to_target.txt \
-#        metrics/${sample_run_name}.sort.total_raw_reads.txt \
-#        ${sample_run_name} \
-#        ${summary_prefix}_summary_coverage.txt
+
+
+# Generate stats collate stage
+    def generate_stats(self, inputs, txt_out, samplename, joint_output):
+        '''run R stats script'''
+        # Assigning inputfiles to correct variables based on suffix
+        for inputfile in inputs:
+            if inputfile.endswith('.bedtools_hist_all.txt'):
+                a = inputfile
+            elif inputfile.endswith('.mapped_to_genome.txt'):
+                b = inputfile
+            elif inputfile.endswith('.mapped_to_target.txt'):
+                c = inputfile
+            elif inputfile.endswith('.total_raw_reads.txt'):
+                d = inputfile
+        e = samplename
+        command = 'Rscript --vanilla /projects/vh83/pipelines/code/modified_summary_stat.R ' \
+                  '{hist_in} {map_genome_in} {map_target_in} {raw_reads_in} {sample_name} ' \
+                  '{txt_out}'.format(hist_in=a, 
+                                      map_genome_in=b, 
+                                      map_target_in=c, 
+                                      raw_reads_in=d , 
+                                      sample_name=e , 
+                                      txt_out=joint_output)
+        run_stage(self.state, 'generate_stats', command)
 
     def sort_vcfs(self, vcf_in, vcf_out):
         '''sort undr_rover vcf files'''
@@ -365,16 +431,27 @@ class Stages(object):
         run_stage(self.state, 'index_vcfs', command)
     
     def concatenate_vcfs(self, vcf_files_in, vcf_out):
-        join_vcf_files = ' '.join([vcf for vcf in vcf_files_in])
-        command = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} '.format(vcf_out=vcf_out, join_vcf_files=join_vcf_files)
-        run_stage(self.state, 'concatenate_vcfs', command) 
+        merge_commands = []
+        temp_merge_outputs = []
+        for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 200.0))):
+            start = n * 200
+            filelist = vcf_files_in[start:start + 200]
+            filelist_command = ' '.join([vcf for vcf in filelist])
+            temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
+            command1 = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} && bcftools index -t -f {vcf_out}; '.format(vcf_out=temp_merge_filename, join_vcf_files=filelist_command)     
+            merge_commands.append(command1)
+            temp_merge_outputs.append(temp_merge_filename)
+
+        final_merge_vcfs = ' '.join([vcf for vcf in temp_merge_outputs])
+        command2 = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} '.format(vcf_out=vcf_out, join_vcf_files=final_merge_vcfs)        
+
+        merge_commands.append(command2)
+        final_command = ''.join(merge_commands)
+        run_stage(self.state, 'concatenate_vcfs', final_command)
 
     def index_final_vcf(self, vcf_in, vcf_out):
         command = 'bcftools index -f --tbi {vcf_in}'.format(vcf_in=vcf_in)
         run_stage(self.state, 'index_final_vcf', command)
-
-
-
 
 
 
