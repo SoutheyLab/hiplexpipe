@@ -133,7 +133,7 @@ def make_pipeline(state):
     pipeline.collate(
         task_func=stages.generate_stats,
         name='generate_stats',
-        input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'), 
+        input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'),
         filter=regex(r'.+/(.+BS\d{4,6}.+S\d+)\..+\.txt'),
         output=r'all_sample.summary.\1.txt',
         extras=[r'\1', 'all_sample.summary.txt'])
@@ -163,73 +163,41 @@ def make_pipeline(state):
         filter=suffix('.combined.vcf'),
         output='.raw.vcf')
 
+    # Decompose and normalise multiallelic sites
+    pipeline.transform(
+        task_func=stages.vt_decompose_normalise,
+        name='vt_decompose_normalise',
+        input=output_from('genotype_gvcf_gatk'),
+        filter=suffix('.raw.vcf'),
+        output='.raw.decomp.norm.vcf')
+
     # Annotate VCF file using GATK
     pipeline.transform(
-       task_func=stages.variant_annotator_gatk,
-       name='variant_annotator_gatk',
-       input=output_from('genotype_gvcf_gatk'),
-       filter=suffix('.raw.vcf'),
-       output='.raw.annotate.vcf')
+        task_func=stages.variant_annotator_gatk,
+        name='variant_annotator_gatk',
+        input=output_from('vt_decompose_normalise'),
+        filter=suffix('.raw.decomp.norm.vcf'),
+        output='.raw.decomp.norm.annotate.vcf')
 
-
-#### split snps and indels for filtering ####
-
+    # Filter vcf
     pipeline.transform(
-        task_func=stages.select_variants_snps_gatk,
-        name='select_variants_snps_gatk',
+        task_func=stages.gatk_filter,
+        name='gatk_filter',
         input=output_from('variant_annotator_gatk'),
-        filter=suffix('raw.annotate.vcf'),
-        output='raw.annotate.snps.vcf')
+        filter=suffix('.raw.decomp.norm.annotate.vcf'),
+        output='.raw.decomp.norm.annotate.filter.vcf')
 
-    pipeline.transform(
-        task_func=stages.select_variants_indels_gatk,
-        name='select_variants_indels_gatk',
-        input=output_from('variant_annotator_gatk'),
-        filter=suffix('raw.annotate.vcf'),
-        output='raw.annotate.indels.vcf')
-
-    pipeline.transform(
-        task_func=stages.apply_variant_filtration_snps_gatk,
-        name='apply_variant_filtration_snps_gatk',
-        input=output_from('select_variants_snps_gatk'),
-        filter=suffix('raw.annotate.snps.vcf'),
-        output='raw.annotate.snps.filtered.vcf')
-
-    pipeline.transform(
-        task_func=stages.apply_variant_filtration_indels_gatk,
-        name='apply_variant_filtration_indels_gatk',
-        input=output_from('select_variants_indels_gatk'),
-        filter=suffix('raw.annotate.indels.vcf'),
-        output='raw.annotate.indels.filtered.vcf')
-
-    (pipeline.transform(
-        task_func=stages.merge_filtered_vcfs_gatk,
-        name='merge_filtered_vcfs_gatk',
-        input=output_from('apply_variant_filtration_snps_gatk'),
-        filter=suffix('.raw.annotate.snps.filtered.vcf'),
-        add_inputs=add_inputs(['variants/gatk/ALL.raw.annotate.indels.filtered.vcf']),
-        output='.raw.annotate.filtered.merged.vcf')
-        .follows('apply_variant_filtration_indels_gatk'))
-
-    pipeline.transform(
-        task_func=stages.left_align_split_multi_allelics,
-        name="left_align_split_multi_allelics",
-        input=output_from('merge_filtered_vcfs_gatk'),
-        filter=suffix('.raw.annotate.filtered.merged.vcf'),
-        output='.raw.annotate.filtered.merged.split_multi.vcf')
-
-     #Apply VEP 
+     #Apply VEP
     (pipeline.transform(
         task_func=stages.apply_vep,
         name='apply_vep',
-        input=output_from('left_align_split_multi_allelics'),
-        filter=suffix('.raw.annotate.filtered.merged.split_multi.vcf'),
+        input=output_from('gatk_filter'),
+        filter=suffix('.raw.decomp.norm.annotate.filter.vcf'),
         add_inputs=add_inputs(['variants/undr_rover/combined_undr_rover.vcf.gz']),
-        output='.raw.annotate.filtered.merged.split_multi.vep.vcf')
+        output='.raw.decomp.norm.annotate.filter.vep.vcf')
         .follows('index_final_vcf'))
 
-#### concatenate undr_rover vcfs ####
-
+    #### concatenate undr_rover vcfs ####
     pipeline.transform(
         task_func=stages.sort_vcfs,
         name='sort_vcfs',
@@ -249,7 +217,7 @@ def make_pipeline(state):
         name='concatenate_vcfs',
         input=output_from('sort_vcfs'),
         output='variants/undr_rover/combined_undr_rover.vcf.gz')
-        .follows('index_vcfs')) 
+        .follows('index_vcfs'))
 
     pipeline.transform(
         task_func=stages.index_final_vcf,
@@ -259,3 +227,4 @@ def make_pipeline(state):
         output='.vcf.gz.tbi')
 
     return pipeline
+
