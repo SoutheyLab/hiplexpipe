@@ -249,9 +249,9 @@ class Stages(object):
     def gatk_filter(self, vcf_in, vcf_out):
         '''Filtering variants (separate filters for SNPs and indels)'''
         gatk_args = "-T VariantFiltration " \
-                    "--disable_auto_index_creation_and_locking_when_reading_rods" \
-                    "-R {reference}" \
-                    "-l ERROR" \
+                    "--disable_auto_index_creation_and_locking_when_reading_rods " \
+                    "-R {reference} " \
+                    "-l ERROR " \
                     "--filterExpression \"QUAL < 30.0\" --filterName GNRL_VeryLowQual " \
                     "--filterExpression \"QD < 2.0\" --filterName GNRL_LowQD " \
                     "--filterExpression \"DP < 50\" --filterName GNRL_LowCoverage " \
