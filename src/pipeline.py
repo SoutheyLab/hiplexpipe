@@ -163,38 +163,46 @@ def make_pipeline(state):
         filter=suffix('.combined.vcf'),
         output='.raw.vcf')
 
+    # Apply GT filters to genotyped vcf
+    pipeline.transform(
+        task_func=stages.genotype_filter_gatk,
+        name='genotype_filter_gatk',
+        input=output_from('genotype_gvcf_gatk'),
+        filter=suffix('.raw.vcf'),
+        output='.raw.gt-filter.vcf')
+
     # Decompose and normalise multiallelic sites
     pipeline.transform(
         task_func=stages.vt_decompose_normalise,
         name='vt_decompose_normalise',
-        input=output_from('genotype_gvcf_gatk'),
-        filter=suffix('.raw.vcf'),
-        output='.raw.decomp.norm.vcf')
+        input=output_from('genotype_filter_gatk'),
+        filter=suffix('.raw.gt-filter.vcf'),
+        output='.raw.gt-filter.decomp.norm.vcf')
 
     # Annotate VCF file using GATK
     pipeline.transform(
         task_func=stages.variant_annotator_gatk,
         name='variant_annotator_gatk',
         input=output_from('vt_decompose_normalise'),
-        filter=suffix('.raw.decomp.norm.vcf'),
-        output='.raw.decomp.norm.annotate.vcf')
+        filter=suffix('.raw.gt-filter.decomp.norm.vcf'),
+        output='.raw.gt-filter.decomp.norm.annotate.vcf')
 
     # Filter vcf
     pipeline.transform(
         task_func=stages.gatk_filter,
         name='gatk_filter',
         input=output_from('variant_annotator_gatk'),
-        filter=suffix('.raw.decomp.norm.annotate.vcf'),
-        output='.raw.decomp.norm.annotate.filter.vcf')
+        filter=suffix('.raw.gt-filter.decomp.norm.annotate.vcf'),
+        output='.raw.gt-filter.decomp.norm.annotate.filter.vcf')
 
      #Apply VEP
     (pipeline.transform(
         task_func=stages.apply_vep,
         name='apply_vep',
         input=output_from('gatk_filter'),
-        filter=suffix('.raw.decomp.norm.annotate.filter.vcf'),
+        filter=suffix('.raw.gt-filter.decomp.norm.annotate.filter.vcf'),
         add_inputs=add_inputs(['variants/undr_rover/combined_undr_rover.vcf.gz']),
-        output='.raw.decomp.norm.annotate.filter.vep.vcf')
+        output='.raw.gt-filter.decomp.norm.annotate.filter.vep.vcf')
         .follows('index_final_vcf'))
 
     #### concatenate undr_rover vcfs ####
@@ -227,4 +235,3 @@ def make_pipeline(state):
         output='.vcf.gz.tbi')
 
     return pipeline
-

@@ -181,10 +181,10 @@ class Stages(object):
             temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
             gatk_args_full = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
                              "--disable_auto_index_creation_and_locking_when_reading_rods " \
-                             "{g_vcf_files} -o {vcf_out}; ".format(reference=self.reference, 
-                                                                   jar_path=GATK_JAR, 
-                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'), 
-                                                                   g_vcf_files=filelist_command, 
+                             "{g_vcf_files} -o {vcf_out}; ".format(reference=self.reference,
+                                                                   jar_path=GATK_JAR,
+                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'),
+                                                                   g_vcf_files=filelist_command,
                                                                    vcf_out=temp_merge_filename)
             merge_commands.append(gatk_args_full)
             temp_merge_outputs.append(temp_merge_filename)
@@ -192,10 +192,10 @@ class Stages(object):
         final_merge_vcfs = ' '.join(['--variant ' + vcf for vcf in temp_merge_outputs])
         gatk_args_full_final = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
                                "--disable_auto_index_creation_and_locking_when_reading_rods " \
-                               "{g_vcf_files} -o {vcf_out}".format(reference=self.reference, 
-                                                                   jar_path=GATK_JAR, 
-                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'), 
-                                                                   g_vcf_files=final_merge_vcfs, 
+                               "{g_vcf_files} -o {vcf_out}".format(reference=self.reference,
+                                                                   jar_path=GATK_JAR,
+                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'),
+                                                                   g_vcf_files=final_merge_vcfs,
                                                                    vcf_out=vcf_out)
 
         merge_commands.append(gatk_args_full_final)
@@ -212,6 +212,22 @@ class Stages(object):
                     .format(reference=self.reference, dbsnp=self.dbsnp_hg19,
                             cores=cores, combined_vcf=combined_vcf_in, vcf_out=vcf_out)
         self.run_gatk('genotype_gvcf_gatk', gatk_args)
+
+    def genotype_filter_gatk(self, vcf_in, vcf_out):
+        '''Apply GT filters to the genotyped VCF'''
+        gatk_args = "-T VariantFiltration -R {reference} " \
+                    "-V {vcf_in} " \
+                    "-o {vcf_out} " \
+                    "-G_filter \"g.isHetNonRef() == 1\" " \
+                    "-G_filterName \"HetNonRef\" " \
+                    "-G_filter \"g.isHet() == 1 && g.isHetNonRef() != 1 && " \
+                    "1.0 * AD[vc.getAlleleIndex(g.getAlleles().1)] / (DP * 1.0) < 0.25\" " \
+                    "-G_filterName \"AltFreqLow\" " \
+                    "-G_filter \"DP < 50.0\" " \
+                    "-G_filterName \"LowDP\"".format(reference=self.reference,
+                                                     vcf_in=vcf_in,
+                                                     vcf_out=vcf_out)
+        self.run_gatk('genotype_filter_gatk', gatk_args)
 
     def vt_decompose_normalise(self, vcf_in, vcf_out):
         '''Decompose multiallelic sites and normalise representations'''
@@ -371,11 +387,11 @@ class Stages(object):
         e = samplename
         command = 'Rscript --vanilla /projects/vh83/pipelines/code/modified_summary_stat.R ' \
                   '{hist_in} {map_genome_in} {map_target_in} {raw_reads_in} {sample_name} ' \
-                  '{txt_out}'.format(hist_in=a, 
-                                      map_genome_in=b, 
-                                      map_target_in=c, 
-                                      raw_reads_in=d , 
-                                      sample_name=e , 
+                  '{txt_out}'.format(hist_in=a,
+                                      map_genome_in=b,
+                                      map_target_in=c,
+                                      raw_reads_in=d ,
+                                      sample_name=e ,
                                       txt_out=joint_output)
         run_stage(self.state, 'generate_stats', command)
 
@@ -397,12 +413,12 @@ class Stages(object):
             filelist = vcf_files_in[start:start + 200]
             filelist_command = ' '.join([vcf for vcf in filelist])
             temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
-            command1 = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} && bcftools index -t -f {vcf_out}; '.format(vcf_out=temp_merge_filename, join_vcf_files=filelist_command)     
+            command1 = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} && bcftools index -t -f {vcf_out}; '.format(vcf_out=temp_merge_filename, join_vcf_files=filelist_command)
             merge_commands.append(command1)
             temp_merge_outputs.append(temp_merge_filename)
 
         final_merge_vcfs = ' '.join([vcf for vcf in temp_merge_outputs])
-        command2 = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} '.format(vcf_out=vcf_out, join_vcf_files=final_merge_vcfs)        
+        command2 = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} '.format(vcf_out=vcf_out, join_vcf_files=final_merge_vcfs)
 
         merge_commands.append(command2)
         final_command = ''.join(merge_commands)
@@ -411,6 +427,3 @@ class Stages(object):
     def index_final_vcf(self, vcf_in, vcf_out):
         command = 'bcftools index -f --tbi {vcf_in}'.format(vcf_in=vcf_in)
         run_stage(self.state, 'index_final_vcf', command)
-
-
-
