@@ -206,12 +206,12 @@ class Stages(object):
         '''Genotype G.VCF files using GATK'''
         cores = self.get_stage_options('genotype_gvcf_gatk', 'cores')
         gatk_args = "-T GenotypeGVCFs -R {reference} " \
-                    "--disable_auto_index_creation_and_locking_when_reading_rods " \
                     "--dbsnp {dbsnp} " \
                     "--num_threads {cores} --variant {combined_vcf} --out {vcf_out}" \
                     .format(reference=self.reference, dbsnp=self.dbsnp_hg19,
                             cores=cores, combined_vcf=combined_vcf_in, vcf_out=vcf_out)
         self.run_gatk('genotype_gvcf_gatk', gatk_args)
+        # "--disable_auto_index_creation_and_locking_when_reading_rods " \  # Removed temporarily
 
     def genotype_filter_gatk(self, vcf_in, vcf_out):
         '''Apply GT filters to the genotyped VCF'''
