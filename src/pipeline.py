@@ -23,30 +23,6 @@ def make_pipeline(state):
         name='original_fastqs',
         output=fastq_files)
 
-    # Align paired end reads in FASTQ to the reference producing a BAM file
-    pipeline.transform(
-        task_func=stages.align_bwa,
-        name='align_bwa',
-        input=output_from('original_fastqs'),
-        # Match the R1 (read 1) FASTQ file and grab the path and sample name.
-        # This will be the first input to the stage.
-        # Hi-Plex example: OHI031002-P02F04_S318_L001_R1_001.fastq
-        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+)_R1_(?P<lib>[a-zA-Z0-9-:]+).fastq.gz'),
-
-        # Add one more inputs to the stage:
-        #    1. The corresponding R2 FASTQ file
-        # Hi-Plex example: OHI031002-P02F04_S318_L001_R2_001.fastq
-        add_inputs=add_inputs(
-            '{path[0]}/{sample[0]}_R2_{lib[0]}.fastq.gz'),
-
-        # Add an "extra" argument to the state (beyond the inputs and outputs)
-        # which is the sample name. This is needed within the stage for finding out
-        # sample specific configuration options
-        extras=['{sample[0]}', '{lib[0]}'],
-        # The output file name is the sample name with a .bam extension.
-        output='alignments/{sample[0]}.clipped.bam')
-
-
     # Call variants using undr_rover
     pipeline.transform(
         task_func=stages.apply_undr_rover,
@@ -58,9 +34,26 @@ def make_pipeline(state):
         add_inputs=add_inputs(
             '{path[0]}/{sample[0]}_R2_{lib[0]}.fastq.gz'),
         extras=['{sample[0]}'],
-
-        # The output file name is the sample name with a .bam extension.
         output='variants/undr_rover/{sample[0]}.vcf')
+
+    # Align paired end reads in FASTQ to the reference producing a BAM file
+    pipeline.transform(
+        task_func=stages.align_bwa,
+        name='align_bwa',
+        input=output_from('original_fastqs'),
+        # Match the R1 (read 1) FASTQ file and grab the path and sample name.
+        # This will be the first input to the stage.
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+)_R1_(?P<lib>[a-zA-Z0-9-:]+).fastq.gz'),
+        # Add one more inputs to the stage:
+        #    1. The corresponding R2 FASTQ file
+        add_inputs=add_inputs(
+            '{path[0]}/{sample[0]}_R2_{lib[0]}.fastq.gz'),
+        # Add an "extra" argument to the state (beyond the inputs and outputs)
+        # which is the sample name. This is needed within the stage for finding out
+        # sample specific configuration options
+        extras=['{sample[0]}', '{lib[0]}'],
+        # The output file name is the sample name with a .bam extension.
+        output='alignments/{sample[0]}.clipped.bam')
 
     # Sort the BAM file using Picard
     pipeline.transform(
@@ -126,8 +119,8 @@ def make_pipeline(state):
     pipeline.transform(
         task_func=stages.total_reads,
         name='total_reads',
-        input=output_from('align_bwa'),
-        filter=suffix('.clipped.bam'),
+        input=output_from('primary_bam'),
+        filter=suffix('.clipped.sort.hq.bam'),
         output='.total_raw_reads.txt')
 
     pipeline.collate(
