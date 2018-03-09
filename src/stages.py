@@ -113,8 +113,8 @@ class Stages(object):
         command = 'bwa mem -M -t {cores} -R {read_group} {reference} {fastq_read1} {fastq_read2} ' \
                   '| {bamclipper} -i -p {primer_bedpe_file} -n {cores} ' \
                   '| samtools view -u -h -q 1 -f 2 -F 4 -F 8 -F 256 - ' \
-                  '| samtools sort @{cores} -o {bam}; samtools index {bam}'
-                  .format(cores=cores,
+                  '| samtools sort \@{cores} -o {bam}; samtools index {bam}'.format(
+                          cores=cores,
                           read_group=read_group,
                           fastq_read1=fastq_read1_in,
                           fastq_read2=fastq_read2_in,
