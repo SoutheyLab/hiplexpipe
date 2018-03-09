@@ -53,37 +53,37 @@ def make_pipeline(state):
         # sample specific configuration options
         extras=['{sample[0]}', '{lib[0]}'],
         # The output file name is the sample name with a .bam extension.
-        output='alignments/{sample[0]}.clipped.bam')
+        output='alignments/{sample[0]}.clipped.sort.hq.bam')
 
     # Sort the BAM file using Picard
-    pipeline.transform(
-        task_func=stages.sort_bam_picard,
-        name='sort_bam_picard',
-        input=output_from('align_bwa'),
-        filter=suffix('.clipped.bam'),
-        output='.clipped.sort.bam')
+#    pipeline.transform(
+#        task_func=stages.sort_bam_picard,
+#        name='sort_bam_picard',
+#        input=output_from('align_bwa'),
+#        filter=suffix('.clipped.bam'),
+#        output='.clipped.sort.bam')
 
-    # High quality and primary alignments
-    pipeline.transform(
-        task_func=stages.primary_bam,
-        name='primary_bam',
-        input=output_from('sort_bam_picard'),
-        filter=suffix('.clipped.sort.bam'),
-        output='.clipped.sort.hq.bam')
+#    # High quality and primary alignments
+#    pipeline.transform(
+#        task_func=stages.align_bwa,
+#        name='align_bwa',
+#        input=output_from('sort_bam_picard'),
+#        filter=suffix('.clipped.sort.bam'),
+#        output='.clipped.sort.hq.bam')
 
-    # index bam file
-    pipeline.transform(
-        task_func=stages.index_sort_bam_picard,
-        name='index_bam',
-        input=output_from('primary_bam'),
-        filter=suffix('.clipped.sort.hq.bam'),
-        output='.clipped.sort.hq.bam.bai')
+#    # index bam file
+#    pipeline.transform(
+#        task_func=stages.index_sort_bam_picard,
+#        name='index_bam',
+#        input=output_from('align_bwa'),
+#        filter=suffix('.clipped.sort.hq.bam'),
+#        output='.clipped.sort.hq.bam.bai')
 
     # generate mapping metrics.
     pipeline.transform(
         task_func=stages.generate_amplicon_metrics,
         name='generate_amplicon_metrics',
-        input=output_from('primary_bam'),
+        input=output_from('align_bwa'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
         output='alignments/metrics/{sample[0]}.amplicon-metrics.txt',
         extras=['{sample[0]}'])
@@ -91,7 +91,7 @@ def make_pipeline(state):
     pipeline.transform(
         task_func=stages.intersect_bed,
         name='intersect_bed',
-        input=output_from('primary_bam'),
+        input=output_from('align_bwa'),
         filter=suffix('.clipped.sort.hq.bam'),
         output='.intersectbed.bam')
 
@@ -105,7 +105,7 @@ def make_pipeline(state):
     pipeline.transform(
         task_func=stages.genome_reads,
         name='genome_reads',
-        input=output_from('primary_bam'),
+        input=output_from('align_bwa'),
         filter=suffix('.clipped.sort.hq.bam'),
         output='.mapped_to_genome.txt')
 
@@ -119,7 +119,7 @@ def make_pipeline(state):
     pipeline.transform(
         task_func=stages.total_reads,
         name='total_reads',
-        input=output_from('primary_bam'),
+        input=output_from('align_bwa'),
         filter=suffix('.clipped.sort.hq.bam'),
         output='.total_raw_reads.txt')
 
@@ -136,7 +136,7 @@ def make_pipeline(state):
     (pipeline.transform(
         task_func=stages.call_haplotypecaller_gatk,
         name='call_haplotypecaller_gatk',
-        input=output_from('primary_bam'),
+        input=output_from('align_bwa'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
         output='variants/gatk/{sample[0]}.g.vcf')
         .follows('index_sort_bam_picard'))
