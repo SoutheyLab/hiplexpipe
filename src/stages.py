@@ -211,7 +211,7 @@ class Stages(object):
                        '{gvcfs} -o {vcf_out}'.format(reference=self.reference,
                                                      gvcfs=filelist,
                                                      vcf_out=vcf_out)
-        self.run_gatk('combine_gvcf_gatk', gatk_args)
+        self.run_gatk('combine_intermediate_gvcf_gatk', gatk_args)
 
     def combine_gvcf_gatk(self, vcf_files_in, vcf_out):
         filelist = ' '.join(['--variant ' + vcf for vcf in vcf_files_in])
