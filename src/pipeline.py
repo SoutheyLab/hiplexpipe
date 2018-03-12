@@ -142,11 +142,19 @@ def make_pipeline(state):
 
 #        .follows('index_sort_bam_picard'))
 
+    # Intermediate combine step (by plate)
+    pipeline.collate(
+        task_func=stages.combine_intermediate_gvcf_gatk,
+        name='combine_gvcf_gatk',
+        input=output_from('call_haplotypecaller_gatk'),
+        filter=regex(r'.+/(BST_[A-Z]+_[0-9]+)-.+',
+        output=r'\1.combined.g.vcf')
+
     # Combine G.VCF files for all samples using GATK
     pipeline.merge(
         task_func=stages.combine_gvcf_gatk,
         name='combine_gvcf_gatk',
-        input=output_from('call_haplotypecaller_gatk'),
+        input=output_from('combine_intermediate_gvcf_gatk'),
         output='variants/gatk/ALL.combined.vcf')
 
     # Genotype G.VCF files using GATK

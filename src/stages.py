@@ -171,38 +171,56 @@ class Stages(object):
                                                                   out=vcf_out, cores=cores)
         self.run_gatk('call_haplotypecaller_gatk', gatk_args)
 
-    # Write as collate
+    # # Write as collate
+    # def combine_gvcf_gatk(self, vcf_files_in, vcf_out):
+    #     '''Combine G.VCF files for all samples using GATK'''
+    #     merge_commands = []
+    #     temp_merge_outputs = []
+    #     for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 200.0))):
+    #         start = n * 200
+    #         filelist = vcf_files_in[start:start + 200]
+    #         filelist_command = ' '.join(['--variant ' + vcf for vcf in filelist])
+    #         temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
+    #         gatk_args_full = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
+    #                          "--disable_auto_index_creation_and_locking_when_reading_rods " \
+    #                          "{g_vcf_files} -o {vcf_out}; ".format(reference=self.reference,
+    #                                                                jar_path=self.gatk_jar,
+    #                                                                mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'),
+    #                                                                g_vcf_files=filelist_command,
+    #                                                                vcf_out=temp_merge_filename)
+    #         merge_commands.append(gatk_args_full)
+    #         temp_merge_outputs.append(temp_merge_filename)
+    #
+    #     final_merge_vcfs = ' '.join(['--variant ' + vcf for vcf in temp_merge_outputs])
+    #     gatk_args_full_final = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
+    #                            "--disable_auto_index_creation_and_locking_when_reading_rods " \
+    #                            "{g_vcf_files} -o {vcf_out}".format(reference=self.reference,
+    #                                                                jar_path=self.gatk_jar,
+    #                                                                mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'),
+    #                                                                g_vcf_files=final_merge_vcfs,
+    #                                                                vcf_out=vcf_out)
+    #
+    #     merge_commands.append(gatk_args_full_final)
+    #     final_command = ''.join(merge_commands)
+    #     run_stage(self.state, 'combine_gvcf_gatk', final_command)
+
+    def combine_intermediate_gvcf_gatk(self, vcf_files_in, vcf_out):
+        filelist = ' '.join(['--variant ' + vcf for vcf in vcf_files_in])
+        gatk_args = '-T CombineGVCFs -R {reference} ' \
+                       '--disable_auto_index_creation_and_locking_when_reading_rods ' \
+                       '{gvcfs} -o {vcf_out}'.format(reference=self.reference,
+                                                     gvcfs=filelist,
+                                                     vcf_out=vcf_out)
+        self.run_gatk('combine_gvcf_gatk', gatk_args)
+
     def combine_gvcf_gatk(self, vcf_files_in, vcf_out):
-        '''Combine G.VCF files for all samples using GATK'''
-        merge_commands = []
-        temp_merge_outputs = []
-        for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 200.0))):
-            start = n * 200
-            filelist = vcf_files_in[start:start + 200]
-            filelist_command = ' '.join(['--variant ' + vcf for vcf in filelist])
-            temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
-            gatk_args_full = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
-                             "--disable_auto_index_creation_and_locking_when_reading_rods " \
-                             "{g_vcf_files} -o {vcf_out}; ".format(reference=self.reference,
-                                                                   jar_path=self.gatk_jar,
-                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'),
-                                                                   g_vcf_files=filelist_command,
-                                                                   vcf_out=temp_merge_filename)
-            merge_commands.append(gatk_args_full)
-            temp_merge_outputs.append(temp_merge_filename)
-
-        final_merge_vcfs = ' '.join(['--variant ' + vcf for vcf in temp_merge_outputs])
-        gatk_args_full_final = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
-                               "--disable_auto_index_creation_and_locking_when_reading_rods " \
-                               "{g_vcf_files} -o {vcf_out}".format(reference=self.reference,
-                                                                   jar_path=self.gatk_jar,
-                                                                   mem=self.state.config.get_stage_options('combine_gvcf_gatk', 'mem'),
-                                                                   g_vcf_files=final_merge_vcfs,
-                                                                   vcf_out=vcf_out)
-
-        merge_commands.append(gatk_args_full_final)
-        final_command = ''.join(merge_commands)
-        run_stage(self.state, 'combine_gvcf_gatk', final_command)
+        filelist = ' '.join(['--variant ' + vcf for vcf in vcf_files_in])
+        gatk_args = '-T CombineGVCFs -R {reference} ' \
+                       '--disable_auto_index_creation_and_locking_when_reading_rods ' \
+                       '{gvcfs} -o {vcf_out}'.format(reference=self.reference,
+                                                     gvcfs=filelist,
+                                                     vcf_out=vcf_out)
+        self.run_gatk('combine_gvcf_gatk', gatk_args)
 
     def genotype_gvcf_gatk(self, combined_vcf_in, vcf_out):
         '''Genotype G.VCF files using GATK'''
