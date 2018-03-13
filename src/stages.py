@@ -431,3 +431,13 @@ class Stages(object):
     def index_final_vcf(self, vcf_in, vcf_out):
         command = 'bcftools index -f --tbi {vcf_in}'.format(vcf_in=vcf_in)
         run_stage(self.state, 'index_final_vcf', command)
+
+
+    def processed_directories(self, out):
+        ''' directories to be processes'''
+        pass
+
+
+
+
+

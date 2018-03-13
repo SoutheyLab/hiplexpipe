@@ -6,7 +6,7 @@ from ruffus import Pipeline, suffix, formatter, add_inputs, output_from, regex
 from stages import Stages
 
 
-def make_pipeline(state):
+def make_pipeline_map(state):
     '''Build the pipeline by constructing stages and connecting them together'''
     # Build an empty pipeline
     pipeline = Pipeline(name='hiplexpipe')
@@ -54,30 +54,6 @@ def make_pipeline(state):
         extras=['{sample[0]}', '{lib[0]}'],
         # The output file name is the sample name with a .bam extension.
         output='alignments/{sample[0]}.clipped.sort.hq.bam')
-
-    # Sort the BAM file using Picard
-#    pipeline.transform(
-#        task_func=stages.sort_bam_picard,
-#        name='sort_bam_picard',
-#        input=output_from('align_bwa'),
-#        filter=suffix('.clipped.bam'),
-#        output='.clipped.sort.bam')
-
-#    # High quality and primary alignments
-#    pipeline.transform(
-#        task_func=stages.align_bwa,
-#        name='align_bwa',
-#        input=output_from('sort_bam_picard'),
-#        filter=suffix('.clipped.sort.bam'),
-#        output='.clipped.sort.hq.bam')
-
-#    # index bam file
-#    pipeline.transform(
-#        task_func=stages.index_sort_bam_picard,
-#        name='index_bam',
-#        input=output_from('align_bwa'),
-#        filter=suffix('.clipped.sort.hq.bam'),
-#        output='.clipped.sort.hq.bam.bai')
 
     # generate mapping metrics.
     pipeline.transform(
@@ -140,13 +116,62 @@ def make_pipeline(state):
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
         output='variants/gatk/{sample[0]}.g.vcf')
 
-#        .follows('index_sort_bam_picard'))
+    #### concatenate undr_rover vcfs ####
+    pipeline.transform(
+        task_func=stages.sort_vcfs,
+        name='sort_vcfs',
+        input=output_from('apply_undr_rover'),
+        filter=suffix('.vcf'),
+        output='.sorted.vcf.gz')
+
+    pipeline.transform(
+        task_func=stages.index_vcfs,
+        name='index_vcfs',
+        input=output_from('sort_vcfs'),
+        filter=suffix('.sorted.vcf.gz'),
+        output='.sorted.vcf.gz.tbi')
+
+    (pipeline.merge(
+        task_func=stages.concatenate_vcfs,
+        name='concatenate_vcfs',
+        input=output_from('sort_vcfs'),
+        output='variants/undr_rover/combined_undr_rover.vcf.gz')
+        .follows('index_vcfs'))
+
+    pipeline.transform(
+        task_func=stages.index_final_vcf,
+        name='index_final_vcf',
+        input=output_from('concatenate_vcfs'),
+        filter=suffix('.vcf.gz'),
+        output='.vcf.gz.tbi')
+
+    return pipeline_map
+
+def make_pipeline_process
+
+
+    '''Build the pipeline by constructing stages and connecting them together'''
+    # Build an empty pipeline
+    pipeline = Pipeline(name='hiplexpipe')
+    # Get a list of paths to all the directories to be combined for variant calling
+    run_directories = state.config.get_option('runs')
+    # Stages are dependent on the state
+    stages = Stages(state)
+
+    # The original FASTQ files
+    # This is a dummy stage. It is useful because it makes a node in the
+    # pipeline graph, and gives the pipeline an obvious starting point.
+    pipeline.originate(
+        task_func=stages.processed_directories,
+        name='processed directories',
+        output=run_directories)
+
 
     # Combine G.VCF files for all samples using GATK
     pipeline.merge(
         task_func=stages.combine_gvcf_gatk,
         name='combine_gvcf_gatk',
-        input=output_from('call_haplotypecaller_gatk'),
+        input=output_from('processed_directories'),
         output='variants/gatk/ALL.combined.vcf')
 
     # Genotype G.VCF files using GATK
@@ -199,33 +224,5 @@ def make_pipeline(state):
         output='.raw.gt-filter.decomp.norm.annotate.filter.vep.vcf')
         .follows('index_final_vcf'))
 
-    #### concatenate undr_rover vcfs ####
-    pipeline.transform(
-        task_func=stages.sort_vcfs,
-        name='sort_vcfs',
-        input=output_from('apply_undr_rover'),
-        filter=suffix('.vcf'),
-        output='.sorted.vcf.gz')
 
-    pipeline.transform(
-        task_func=stages.index_vcfs,
-        name='index_vcfs',
-        input=output_from('sort_vcfs'),
-        filter=suffix('.sorted.vcf.gz'),
-        output='.sorted.vcf.gz.tbi')
-
-    (pipeline.merge(
-        task_func=stages.concatenate_vcfs,
-        name='concatenate_vcfs',
-        input=output_from('sort_vcfs'),
-        output='variants/undr_rover/combined_undr_rover.vcf.gz')
-        .follows('index_vcfs'))
-
-    pipeline.transform(
-        task_func=stages.index_final_vcf,
-        name='index_final_vcf',
-        input=output_from('concatenate_vcfs'),
-        filter=suffix('.vcf.gz'),
-        output='.vcf.gz.tbi')
-
-    return pipeline
+    return pipeline_process
