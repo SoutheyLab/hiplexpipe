@@ -72,7 +72,7 @@ def main():
     
     if args.mode ==  "map":
         pipeline = make_pipeline_map(state)
-    else args.mode == "process":
+    else if args.mode == "process":
         pipeline = make_pipeline_process(state)
 
     # Run (or print) the pipeline
