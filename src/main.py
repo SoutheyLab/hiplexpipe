@@ -63,13 +63,14 @@ def main():
         print("{progname} error using DRMAA library".format(progname=program_name), file=sys.stdout)
         print("Error message: {msg}".format(msg=e.message, file=sys.stdout))
         exit(error_codes.DRMAA_ERROR)
+    
     # Parse the configuration file, and initialise global state
     config = Config(options.config)
     config.validate()
     state = State(options=options, config=config, logger=logger,
                   drmaa_session=drmaa_session)
-    # Build the pipeline workflow
     
+    # Build the pipeline workflow
     if options.mode is 'process':
         pipeline = make_pipeline_process(state)
     else:
