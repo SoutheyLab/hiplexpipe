@@ -4,7 +4,7 @@ Build the pipeline workflow by plumbing the stages together.
 
 from ruffus import Pipeline, suffix, formatter, add_inputs, output_from, regex
 from stages import Stages
-
+import glob
 
 def make_pipeline_map(state):
     '''Build the pipeline by constructing stages and connecting them together'''
@@ -126,7 +126,7 @@ def make_pipeline_map(state):
 
     pipeline.transform(
         task_func=stages.index_vcfs,
-        name='index_vcfs',
+        name='ndex_vcfs',
         input=output_from('sort_vcfs'),
         filter=suffix('.sorted.vcf.gz'),
         output='.sorted.vcf.gz.tbi')
@@ -147,13 +147,15 @@ def make_pipeline_map(state):
 
     return pipeline_map
 
-
-
 def make_pipeline_process
     # Define empty pipeline
     pipeline = Pipeline(name='hiplexpipe')
     # Get a list of paths to all the directories to be combined for variant calling
     run_directories = state.config.get_option('runs')
+    #grab files from each of the processed directories in "runs"
+    gatk_files = glob.glob('runs/variants/gatk/*.g.vcf')
+    undr_rover_files = glob.glob('runs/variants/undr_rover/*.vcf')
+    
     # Stages are dependent on the state
     stages = Stages(state)
 
@@ -162,15 +164,15 @@ def make_pipeline_process
     pipeline.originate(
         task_func=stages.processed_directories,
         name='processed directories',
-        output=run_directories)
-
+        output=gatk_files)
 
     # Combine G.VCF files for all samples using GATK
     pipeline.merge(
         task_func=stages.combine_gvcf_gatk,
         name='combine_gvcf_gatk',
         input=output_from('processed_directories'),
-        output='variants/gatk/ALL.combined.vcf')
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).g.vcf') 
+        output='ALL.combined.vcf')
 
     # Genotype G.VCF files using GATK
     pipeline.transform(
