@@ -40,7 +40,7 @@ def parse_command_line():
         default=DEFAULT_JOBSCRIPT_DIR,
         help='Directory to store cluster job scripts created by the ' \
              'pipeline, defaults to {}'.format(DEFAULT_JOBSCRIPT_DIR))
-    parser.add_argument('--mode', type=str, default='map', choices='map', 'process'],  help='set to "map" to process fastq files up to haplotype caller, or "process" to process multiple map directories.  Default is map')
+    parser.add_argument('--mode', type=str, default='map', choices=['map', 'process'],  help='set to "map" to process fastq files up to haplotype caller, or "process" to process multiple map directories.  Default is map')
     parser.add_argument('--version', action='version',
         version='%(prog)s ' + version)
     return parser.parse_args()
