@@ -147,18 +147,16 @@ def make_pipeline_map(state):
 
     return pipeline_map
 
+
+
 def make_pipeline_process
-
-
-    '''Build the pipeline by constructing stages and connecting them together'''
-    # Build an empty pipeline
+    # Define empty pipeline
     pipeline = Pipeline(name='hiplexpipe')
     # Get a list of paths to all the directories to be combined for variant calling
     run_directories = state.config.get_option('runs')
     # Stages are dependent on the state
     stages = Stages(state)
 
-    # The original FASTQ files
     # This is a dummy stage. It is useful because it makes a node in the
     # pipeline graph, and gives the pipeline an obvious starting point.
     pipeline.originate(

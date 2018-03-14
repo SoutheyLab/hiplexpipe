@@ -68,8 +68,8 @@ class Stages(object):
     def get_options(self, *options):
         return self.state.config.get_options(*options)
 
-    def original_fastqs(self, output):
-        '''Original fastq files'''
+    def process_directories(self, output):
+        '''Directories to be processed'''
         pass
 
     def apply_undr_rover(self, inputs, vcf_output, sample_id):

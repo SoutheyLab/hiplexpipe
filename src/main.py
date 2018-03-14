@@ -19,7 +19,7 @@ import sys
 from config import Config
 from state import State
 from logger import Logger
-from pipeline import make_pipeline
+import pipeline
 import error_codes
 
 # default place to save cluster job scripts
@@ -40,6 +40,7 @@ def parse_command_line():
         default=DEFAULT_JOBSCRIPT_DIR,
         help='Directory to store cluster job scripts created by the ' \
              'pipeline, defaults to {}'.format(DEFAULT_JOBSCRIPT_DIR))
+    parser.add_argument('--mode', type=str, default='map', choices=["map", "process"],  help='set to "map" to process fastq files up to haplotype caller, or "process" to process multiple map directories.  Default is map')
     parser.add_argument('--version', action='version',
         version='%(prog)s ' + version)
     return parser.parse_args()
@@ -68,7 +69,12 @@ def main():
     state = State(options=options, config=config, logger=logger,
                   drmaa_session=drmaa_session)
     # Build the pipeline workflow
-    pipeline = make_pipeline(state)
+    
+    if args.mode ==  "map":
+        pipeline = make_pipeline_map(state)
+    else args.mode == "process":
+        pipeline = make_pipeline_process(state)
+
     # Run (or print) the pipeline
     cmdline.run(options)
     if drmaa_session is not None:
