@@ -70,9 +70,9 @@ def main():
                   drmaa_session=drmaa_session)
     # Build the pipeline workflow
     
-    if args.mode ==  "map":
+    if args.mode ==  'map':
         pipeline = make_pipeline_map(state)
-    else if args.mode == "process":
+    else args.mode == 'process':
         pipeline = make_pipeline_process(state)
 
     # Run (or print) the pipeline
