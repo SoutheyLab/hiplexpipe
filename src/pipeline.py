@@ -148,7 +148,7 @@ def make_pipeline_process(state):
     pipeline.merge(
         task_func=stages.combine_gvcf_gatk,
         name='combine_gvcf_gatk',
-        input=output_from('processed_directories'),
+        input=output_from('glob_gatk'),
         output='ALL.combined.vcf')
 
     # Genotype G.VCF files using GATK
