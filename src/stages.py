@@ -72,6 +72,10 @@ class Stages(object):
         '''Directories to be processed'''
         pass
 
+    def original_fastqs(self, output):
+        '''original fastq files'''
+        pass
+
     def apply_undr_rover(self, inputs, vcf_output, sample_id):
         '''Apply undr_rover to call variants from paired end fastq files'''
         fastq_read1_in, fastq_read2_in = inputs
