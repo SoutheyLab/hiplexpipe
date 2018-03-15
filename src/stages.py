@@ -68,12 +68,16 @@ class Stages(object):
     def get_options(self, *options):
         return self.state.config.get_options(*options)
 
-    def process_directories(self, output):
-        '''Directories to be processed'''
+    def glob_gatk(self, output):
+        '''grab all the gatk .g.vcf files'''
+        pass
+
+    def glob_undr_rover(self, output):
+        '''grab all under rover vcf files'''
         pass
 
     def original_fastqs(self, output):
-        '''original fastq files'''
+        '''grab the fastq files to map'''
         pass
 
     def apply_undr_rover(self, inputs, vcf_output, sample_id):

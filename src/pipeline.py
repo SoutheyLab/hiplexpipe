@@ -116,34 +116,6 @@ def make_pipeline_map(state):
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
         output='variants/gatk/{sample[0]}.g.vcf')
 
-    #### concatenate undr_rover vcfs ####
-    pipeline.transform(
-        task_func=stages.sort_vcfs,
-        name='sort_vcfs',
-        input=output_from('apply_undr_rover'),
-        filter=suffix('.vcf'),
-        output='.sorted.vcf.gz')
-
-    pipeline.transform(
-        task_func=stages.index_vcfs,
-        name='ndex_vcfs',
-        input=output_from('sort_vcfs'),
-        filter=suffix('.sorted.vcf.gz'),
-        output='.sorted.vcf.gz.tbi')
-
-    (pipeline.merge(
-        task_func=stages.concatenate_vcfs,
-        name='concatenate_vcfs',
-        input=output_from('sort_vcfs'),
-        output='variants/undr_rover/combined_undr_rover.vcf.gz')
-        .follows('index_vcfs'))
-
-    pipeline.transform(
-        task_func=stages.index_final_vcf,
-        name='index_final_vcf',
-        input=output_from('concatenate_vcfs'),
-        filter=suffix('.vcf.gz'),
-        output='.vcf.gz.tbi')
 
     return pipeline
 
@@ -162,9 +134,16 @@ def make_pipeline_process(state):
     # This is a dummy stage. It is useful because it makes a node in the
     # pipeline graph, and gives the pipeline an obvious starting point.
     pipeline.originate(
-        task_func=stages.processed_directories,
-        name='processed directories',
+        task_func=stages.glob_gatk,
+        name='glob_gatk',
         output=gatk_files)
+    
+    #Dummy stage to grab the undr rover files
+    pipeline.originate(
+        task_funx=stages.glob_undr_rover,
+        name='glob_undr_rover',
+        output=undr_rover_files)
+
 
     # Combine G.VCF files for all samples using GATK
     pipeline.merge(
@@ -213,7 +192,36 @@ def make_pipeline_process(state):
         filter=suffix('.raw.gt-filter.decomp.norm.annotate.vcf'),
         output='.raw.gt-filter.decomp.norm.annotate.filter.vcf')
 
-     #Apply VEP
+    #### concatenate undr_rover vcfs ####
+    pipeline.transform(
+        task_func=stages.sort_vcfs,
+        name='sort_vcfs',
+        input=output_from('apply_undr_rover'),
+        filter=suffix('.vcf'),
+        output='.sorted.vcf.gz')
+
+    pipeline.transform(
+        task_func=stages.index_vcfs,
+        name='ndex_vcfs',
+        input=output_from('sort_vcfs'),
+        filter=suffix('.sorted.vcf.gz'),
+        output='.sorted.vcf.gz.tbi')
+
+    (pipeline.merge(
+        task_func=stages.concatenate_vcfs,
+        name='concatenate_vcfs',
+        input=output_from('sort_vcfs'),
+        output='variants/undr_rover/combined_undr_rover.vcf.gz')
+        .follows('index_vcfs'))
+
+    pipeline.transform(
+        task_func=stages.index_final_vcf,
+        name='index_final_vcf',
+        input=output_from('concatenate_vcfs'),
+        filter=suffix('.vcf.gz'),
+        output='.vcf.gz.tbi')
+      
+   #Apply VEP
     (pipeline.transform(
         task_func=stages.apply_vep,
         name='apply_vep',
