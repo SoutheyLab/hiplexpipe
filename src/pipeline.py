@@ -140,7 +140,7 @@ def make_pipeline_process(state):
     
     #Dummy stage to grab the undr rover files
     pipeline.originate(
-        task_funx=stages.glob_undr_rover,
+        task_func=stages.glob_undr_rover,
         name='glob_undr_rover',
         output=undr_rover_files)
 
