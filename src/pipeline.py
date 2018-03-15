@@ -125,8 +125,8 @@ def make_pipeline_process(state):
     # Get a list of paths to all the directories to be combined for variant calling
     run_directories = state.config.get_option('runs')
     #grab files from each of the processed directories in "runs"
-    gatk_files = glob.glob('runs/variants/gatk/*.g.vcf')
-    undr_rover_files = glob.glob('runs/variants/undr_rover/*.vcf')
+    gatk_files = glob.glob('{run_directories}/variants/gatk/*.g.vcf').format(run_directories=run_directories)
+    undr_rover_files = glob.glob('{run_directories}/variants/undr_rover/*.vcf').format(run_directories=run_directories)
     
     # Stages are dependent on the state
     stages = Stages(state)
