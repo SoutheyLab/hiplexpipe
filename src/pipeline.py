@@ -171,7 +171,6 @@ def make_pipeline_process(state):
         task_func=stages.combine_gvcf_gatk,
         name='combine_gvcf_gatk',
         input=output_from('processed_directories'),
-        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).g.vcf'), 
         output='ALL.combined.vcf')
 
     # Genotype G.VCF files using GATK
