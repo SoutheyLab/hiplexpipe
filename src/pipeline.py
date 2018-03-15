@@ -199,12 +199,12 @@ def make_pipeline_process(state):
         task_func=stages.sort_vcfs,
         name='sort_vcfs',
         input=output_from('glob_undr_rover'),
-        filter=suffix('.vcf'),
+        filter=formatter('.+\.vcf'),
         output='.sorted.vcf.gz')
 
     pipeline.transform(
         task_func=stages.index_vcfs,
-        name='ndex_vcfs',
+        name='index_vcfs',
         input=output_from('sort_vcfs'),
         filter=suffix('.sorted.vcf.gz'),
         output='.sorted.vcf.gz.tbi')
