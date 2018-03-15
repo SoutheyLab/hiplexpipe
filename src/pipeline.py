@@ -145,7 +145,7 @@ def make_pipeline_map(state):
         filter=suffix('.vcf.gz'),
         output='.vcf.gz.tbi')
 
-    return pipeline_map
+    return pipeline
 
 def make_pipeline_process():
     # Define empty pipeline
@@ -224,5 +224,4 @@ def make_pipeline_process():
         output='.raw.gt-filter.decomp.norm.annotate.filter.vep.vcf')
         .follows('index_final_vcf'))
 
-
-    return pipeline_process
+    return pipeline
