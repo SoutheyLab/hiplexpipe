@@ -144,7 +144,6 @@ def make_pipeline_process(state):
         name='glob_undr_rover',
         output=undr_rover_files)
 
-
     # Combine G.VCF files for all samples using GATK
     pipeline.merge(
         task_func=stages.combine_gvcf_gatk,
@@ -196,7 +195,7 @@ def make_pipeline_process(state):
     pipeline.transform(
         task_func=stages.sort_vcfs,
         name='sort_vcfs',
-        input=output_from('apply_undr_rover'),
+        input=output_from('glob_undr_rover'),
         filter=suffix('.vcf'),
         output='.sorted.vcf.gz')
 
