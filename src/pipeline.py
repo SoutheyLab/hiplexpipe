@@ -128,8 +128,8 @@ def make_pipeline_process(state):
     gatk_files = []
     undr_rover_files = []
     for directory in run_directories:
-        gatk_files.append(glob.glob(directory + '/variants/gatk/*.g.vcf'))
-        undr_rover_files.append(glob.glob(directory + '/variants/undr_rover/*.vcf'))
+        gatk_files.extend(glob.glob(directory + '/variants/gatk/*.g.vcf'))
+        undr_rover_files.extend(glob.glob(directory + '/variants/undr_rover/*.vcf'))
     
     # Stages are dependent on the state
     stages = Stages(state)
