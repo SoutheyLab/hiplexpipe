@@ -147,7 +147,7 @@ def make_pipeline_map(state):
 
     return pipeline
 
-def make_pipeline_process():
+def make_pipeline_process(state):
     # Define empty pipeline
     pipeline = Pipeline(name='hiplexpipe')
     # Get a list of paths to all the directories to be combined for variant calling
