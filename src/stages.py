@@ -33,8 +33,10 @@ class Stages(object):
         # Reference genome and interval files
         self.reference = self.get_options('ref_grch37')
         self.interval_file = self.get_options('interval_file')
-        self.primer_file = self.get_options('primer_file')  # UNDR ROVER primer file
-        self.primer_bedpe_file = self.get_options('primer_bedpe_file')  # Bamclipper primer file
+        self.primer_file_QC = self.get_options('primer_file_qc')  # UNDR ROVER primer file for any QC plates
+        self.primer_file_default = self.get_options('primer_file_default')  # UNDR ROVER primer file for default mapping
+        self.primer_bedpe_file_default = self.get_options('primer_bedpe_file')  # Bamclipper primer file
+        self.primer_bedpe_file_QC = self.get_options('primer_bedpe_file')  # Bamclipper primer file for QC plates
         # Programs and program settings
         self.picard_jar = self.get_options('picard_jar')
         self.gatk_jar = self.get_options('gatk_jar')
@@ -89,6 +91,11 @@ class Stages(object):
         coverdir = "variants/undr_rover/coverdir"
         coverfile = sample_id + ".coverage"
 
+        if "QC" in input[0]:
+            primer_file = primer_file_QC
+        else: 
+            primer_file = primer_file_default
+
         command = 'undr_rover --primer_coords {coord_file} ' \
                   '--primer_sequences {primer_file} ' \
                   '--reference {reference} ' \
@@ -118,6 +125,13 @@ class Stages(object):
         safe_make_dir('alignments')
         read_group = '"@RG\\tID:{sample}\\tSM:{sample}\\tPU:lib1\\tPL:Illumina"' \
             .format(sample=sample_id)
+        
+        if "QC" in input[0]:
+            primer_bedpe_file = primer_bedpe_file_QC
+        else: 
+            primer_bedpe_file = primer_bedpe_file_default
+
+
         command = 'bwa mem -M -t {cores} -R {read_group} {reference} {fastq_read1} {fastq_read2} ' \
                   '| {bamclipper} -i -p {primer_bedpe_file} -n {cores} ' \
                   '| samtools view -u -h -q 1 -f 2 -F 4 -F 8 -F 256 - ' \
