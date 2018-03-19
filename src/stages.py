@@ -92,7 +92,7 @@ class Stages(object):
         coverdir = "variants/undr_rover/coverdir"
         coverfile = sample_id + ".coverage"
 
-        if "QC" in input[0]:
+        if "QC" in fastq_read1_in:
             primer_file = primer_file_QC
             interval_file = interval_file_QC
         else: 
@@ -129,7 +129,7 @@ class Stages(object):
         read_group = '"@RG\\tID:{sample}\\tSM:{sample}\\tPU:lib1\\tPL:Illumina"' \
             .format(sample=sample_id)
         
-        if "QC" in input[0]:
+        if "QC" in fastq_read1_in:
             primer_bedpe_file = primer_bedpe_file_QC
         else: 
             primer_bedpe_file = primer_bedpe_file_default
