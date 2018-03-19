@@ -93,11 +93,11 @@ class Stages(object):
         coverfile = sample_id + ".coverage"
 
         if "QC" in fastq_read1_in:
-            primer_file = primer_file_QC
-            interval_file = interval_file_QC
+            primer_file = self.primer_file_QC
+            interval_file = self.interval_file_QC
         else: 
-            primer_file = primer_file_default
-            interval_file = interval_file
+            primer_file = self.primer_file_default
+            interval_file = self.interval_file
 
         command = 'undr_rover --primer_coords {coord_file} ' \
                   '--primer_sequences {primer_file} ' \
@@ -109,7 +109,7 @@ class Stages(object):
                   '--max_variants {maxvariants} ' \
                   '--fast --snvthresh 10 ' \
                   '{fastq_read1} {fastq_read2}'.format(
-                        coord_file=self.interval_file, primer_file=self.primer_file,
+                        coord_file=interval_file, primer_file=primer_file,
                         reference=self.reference,
                         vcf_output=vcf_output,
                         coverdir=coverdir,
@@ -130,9 +130,9 @@ class Stages(object):
             .format(sample=sample_id)
         
         if "QC" in fastq_read1_in:
-            primer_bedpe_file = primer_bedpe_file_QC
+            primer_bedpe_file = self.primer_bedpe_file_QC
         else: 
-            primer_bedpe_file = primer_bedpe_file_default
+            primer_bedpe_file = self.primer_bedpe_file_default
 
 
         command = 'bwa mem -M -t {cores} -R {read_group} {reference} {fastq_read1} {fastq_read2} ' \
@@ -145,7 +145,7 @@ class Stages(object):
                           fastq_read2=fastq_read2_in,
                           reference=self.reference,
                           bamclipper=self.bamclipper,
-                          primer_bedpe_file=self.primer_bedpe_file,
+                          primer_bedpe_file=primer_bedpe_file,
                           bam=bam_out)
         run_stage(self.state, 'align_bwa', command)
 
