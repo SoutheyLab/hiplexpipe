@@ -68,8 +68,16 @@ class Stages(object):
     def get_options(self, *options):
         return self.state.config.get_options(*options)
 
+    def glob_gatk(self, output):
+        '''grab all the gatk .g.vcf files'''
+        pass
+
+    def glob_undr_rover(self, output):
+        '''grab all under rover vcf files'''
+        pass
+
     def original_fastqs(self, output):
-        '''Original fastq files'''
+        '''grab the fastq files to map'''
         pass
 
     def apply_undr_rover(self, inputs, vcf_output, sample_id):
@@ -111,9 +119,10 @@ class Stages(object):
         read_group = '"@RG\\tID:{sample}\\tSM:{sample}\\tPU:lib1\\tPL:Illumina"' \
             .format(sample=sample_id)
         command = 'bwa mem -M -t {cores} -R {read_group} {reference} {fastq_read1} {fastq_read2} ' \
-                  '| {bamclipper} -i -p {primer_bedpe_file} -n 1 ' \
-                  '| samtools view -b -h -o {bam} -' \
-                  .format(cores=cores,
+                  '| {bamclipper} -i -p {primer_bedpe_file} -n {cores} ' \
+                  '| samtools view -u -h -q 1 -f 2 -F 4 -F 8 -F 256 - ' \
+                  '| samtools sort -@ {cores} -o {bam}; samtools index {bam}'.format(
+                          cores=cores,
                           read_group=read_group,
                           fastq_read1=fastq_read1_in,
                           fastq_read2=fastq_read2_in,
@@ -123,26 +132,26 @@ class Stages(object):
                           bam=bam_out)
         run_stage(self.state, 'align_bwa', command)
 
-    def sort_bam_picard(self, bam_in, sorted_bam_out):
-        '''Sort the BAM file using Picard'''
-        picard_args = 'SortSam INPUT={bam_in} OUTPUT={sorted_bam_out} ' \
-                      'VALIDATION_STRINGENCY=LENIENT SORT_ORDER=coordinate ' \
-                      'MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=True'.format(
-                          bam_in=bam_in, sorted_bam_out=sorted_bam_out)
-        self.run_picard('sort_bam_picard', picard_args)
+#    def sort_bam_picard(self, bam_in, sorted_bam_out):
+#        '''Sort the BAM file using Picard'''
+#        picard_args = 'SortSam INPUT={bam_in} OUTPUT={sorted_bam_out} ' \
+#                      'VALIDATION_STRINGENCY=LENIENT SORT_ORDER=coordinate ' \
+#                      'MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=True'.format(
+#                          bam_in=bam_in, sorted_bam_out=sorted_bam_out)
+#        self.run_picard('sort_bam_picard', picard_args)
 
-    def primary_bam(self, bam_in, sbam_out):
-        '''Only keep primary alignments in the BAM file using samtools'''
-        command = 'samtools view -h -q 1 -f 2 -F 4 -F 8 -F 256 -b ' \
-                    '-o {sbam_out} {bam_in}'.format(
-                        bam_in=bam_in, sbam_out=sbam_out)
-        run_stage(self.state, 'primary_bam', command)
+#    def primary_bam(self, bam_in, sbam_out):
+#        '''Only keep primary alignments in the BAM file using samtools'''
+#        command = 'samtools view -h -q 1 -f 2 -F 4 -F 8 -F 256 -b ' \
+#                    '-o {sbam_out} {bam_in}'.format(
+#                        bam_in=bam_in, sbam_out=sbam_out)
+#        run_stage(self.state, 'primary_bam', command)
 
-    def index_sort_bam_picard(self, bam_in, bam_index):
-        '''Index sorted bam using samtools'''
-        command = 'samtools index {bam_in} {bam_index}'.format(bam_in=bam_in,
-                                                               bam_index=bam_index)
-        run_stage(self.state, 'index_sort_bam_picard', command)
+#   def index_sort_bam_picard(self, bam_in, bam_index):
+#        '''Index sorted bam using samtools'''
+#        command = 'samtools index {bam_in} {bam_index}'.format(bam_in=bam_in,
+#                                                               bam_index=bam_index)
+#        run_stage(self.state, 'index_sort_bam_picard', command)
 
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
@@ -430,3 +439,13 @@ class Stages(object):
     def index_final_vcf(self, vcf_in, vcf_out):
         command = 'bcftools index -f --tbi {vcf_in}'.format(vcf_in=vcf_in)
         run_stage(self.state, 'index_final_vcf', command)
+
+
+    def processed_directories(self, out):
+        ''' directories to be processes'''
+        pass
+
+
+
+
+

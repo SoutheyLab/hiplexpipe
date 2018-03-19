@@ -49,10 +49,10 @@ We recommend using a python virtual environment. Following is an examples of how
 #### Installation example on Monash clusters
 
 ```
-/usr/local/python/2.7.12_static/bin/virtualenv --system-site-packages venv_name
+/usr/local/python/2.7.12_static/bin/virtualenv --system-site-packages pipeline_env
 module load drmaa
 export DRMAA_LIBRARY_PATH=/usr/local/drmaa/1.0.7/lib/libdrmaa.so
-source venv_name/bin/activate
+source pipeline_env/bin/activate
 pip install numpy
 pip install scipy
 pip install git+https://github.com/SoutheyLab/undr_rover
