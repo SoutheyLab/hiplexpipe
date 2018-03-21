@@ -103,7 +103,8 @@ def make_pipeline_map(state):
         task_func=stages.generate_stats,
         name='generate_stats',
         input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'),
-        filter=regex(r'.+/(.+BS\d{4,6}.+)\..+\.txt'),
+        #filter=regex(r'.+/(.+BS\d{4,6}.+)\..+\.txt'),
+        filter=regex(r'.+/(.+)\.bedtools_hist_all|mapped_to_genome|mapped_to_target.txt|total_raw_reads\.txt')
         output=r'all_sample.summary.\1.txt',
         extras=[r'\1', 'all_sample.summary.txt'])
 
