@@ -99,7 +99,7 @@ def make_pipeline_map(state):
         filter=suffix('.clipped.sort.hq.bam'),
         output='.total_raw_reads.txt')
 
-    pipeline.collate(
+    (pipeline.collate(
         task_func=stages.generate_stats,
         name='generate_stats',
         input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'),
@@ -107,6 +107,7 @@ def make_pipeline_map(state):
         filter=regex(r'.+/(.+)\.(bedtools_hist_all|mapped_to_genome|mapped_to_target|total_raw_reads)\.txt'),
         output=r'all_sample.summary.\1.txt',
         extras=[r'\1', 'all_sample.summary.txt'])
+        .follows('call_haplotypecaller_gatk'))
 
     ###### GATK VARIANT CALLING ######
     # Call variants using GATK
