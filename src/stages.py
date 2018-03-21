@@ -201,9 +201,9 @@ class Stages(object):
         '''Combine G.VCF files for all samples using GATK'''
         merge_commands = []
         temp_merge_outputs = []
-        for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 200.0))):
-            start = n * 200
-            filelist = vcf_files_in[start:start + 200]
+        for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 100.0))):
+            start = n * 100
+            filelist = vcf_files_in[start:start + 100]
             filelist_command = ' '.join(['--variant ' + vcf for vcf in filelist])
             temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
             gatk_args_full = "java -Xmx{mem}g -jar {jar_path} -T CombineGVCFs -R {reference} " \
@@ -437,9 +437,9 @@ class Stages(object):
     def concatenate_vcfs(self, vcf_files_in, vcf_out):
         merge_commands = []
         temp_merge_outputs = []
-        for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 200.0))):
-            start = n * 200
-            filelist = vcf_files_in[start:start + 200]
+        for n in range(0, int(math.ceil(float(len(vcf_files_in)) / 100.0))):
+            start = n * 100
+            filelist = vcf_files_in[start:start + 100]
             filelist_command = ' '.join([vcf for vcf in filelist])
             temp_merge_filename = vcf_out.rstrip('.vcf') + ".temp_{start}.vcf".format(start=str(start))
             command1 = 'bcftools concat -a -O z -o {vcf_out} {join_vcf_files} && bcftools index -t -f {vcf_out}; '.format(vcf_out=temp_merge_filename, join_vcf_files=filelist_command)
