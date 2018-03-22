@@ -1,5 +1,5 @@
 # hiplexpipe
-
+#3_stage_pipe
 ## A bioinformatics pipeline for variant calling for [Hi-Plex](http://hiplex.org/) sequencing.
 
 Author: Khalid Mahmood (kmahmood@unimelb.edu.au).
