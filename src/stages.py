@@ -362,13 +362,14 @@ class Stages(object):
                         bam_in=bam_in, txt_out=txt_out)
         run_stage(self.state, 'total_reads', command)
 
-    def filter_stats(self, txt_in, txt_out):
+    def filter_stats(self, inputs, txt_out, final_file):
         '''run a filter on all.summary.txt to determine which files to further process'''
+        dummy_in, [summary_file] = inputs
         command = "awk 'BEGIN{FS=\"\t\"}{if($11 < 85.00){" \
                   "print $1\".clipped.sort.hq.bam\"}' " \
-                  "{txt_in} > {txt_out}".format(
-                                        txt_in=txt_in,
-                                        txt_out=txt_out)
+                  "{summary_file} > {final_file}".format(
+                                        summary_file=summary_file,
+                                        final_file=final_file)
         run_stage(self.state, 'filter_stats', command)        
 
     def generate_amplicon_metrics(self, bam_in, txt_out, sample):

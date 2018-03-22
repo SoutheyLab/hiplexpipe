@@ -109,9 +109,10 @@ def make_pipeline_map(state):
         task_func=stages.filter_stats,
         name='filter_stats',
         input=output_from('generate_stats'),
-        filter=suffix('sample.summary.txt'),
-        output='passed.sample.summary.txt')
-
+        filter=suffix('.txt'),
+        add_inputs=add_inputs(['all_sample.summary.txt'],
+        output='.txt',
+        extras=['passed.sample.summary.txt'])
     return pipeline
     
 def make_pipeline_call(state):
