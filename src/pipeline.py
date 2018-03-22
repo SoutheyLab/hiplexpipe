@@ -12,7 +12,8 @@ def make_pipeline_map(state):
     # Build an empty pipeline
     pipeline = Pipeline(name='hiplexpipe')
     # Get a list of paths to all the FASTQ files
-    fastq_files = state.config.get_option('fastqs')
+    #fastq_files = state.config.get_option('fastqs')
+    fastq_files = glob.glob('fastqs/*'))
     # Stages are dependent on the state
     stages = Stages(state)
 
@@ -28,6 +29,9 @@ def make_pipeline_map(state):
         task_func=stages.original_fastqs,
         name='original_fastqs',
         output=fastq_files)
+
+
+
 
     # Align paired end reads in FASTQ to the reference producing a BAM file
     pipeline.transform(
