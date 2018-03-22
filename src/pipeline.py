@@ -13,7 +13,7 @@ def make_pipeline_map(state):
     pipeline = Pipeline(name='hiplexpipe')
     # Get a list of paths to all the FASTQ files
     #fastq_files = state.config.get_option('fastqs')
-    fastq_files = glob.glob('fastqs/*'))
+    fastq_files = glob.glob('fastqs/*')
     # Stages are dependent on the state
     stages = Stages(state)
 
