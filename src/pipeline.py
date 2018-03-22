@@ -30,9 +30,6 @@ def make_pipeline_map(state):
         name='original_fastqs',
         output=fastq_files)
 
-
-
-
     # Align paired end reads in FASTQ to the reference producing a BAM file
     pipeline.transform(
         task_func=stages.align_bwa,
@@ -110,7 +107,7 @@ def make_pipeline_map(state):
         name='filter_stats',
         input=output_from('generate_stats'),
         filter=suffix('.txt'),
-        add_inputs=add_inputs(['all_sample.summary.txt'],
+        add_inputs=add_inputs(['all_sample.summary.txt']),
         output='.txt',
         extras=['passed.sample.summary.txt'])
     
