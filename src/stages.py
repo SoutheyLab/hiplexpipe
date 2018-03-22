@@ -365,7 +365,7 @@ class Stages(object):
 
     def filter_stats(self, txt_in, txt_out):
         '''run a filter on all.summary.txt to determine which files to further process'''
-        command = "awk 'BEGIN{FS=\"\t\"}{if($11 < 90.0){" \
+        command = "awk 'BEGIN{FS=\"\t\"}{if($11 < 85.00){" \
                   "print $1\".clipped.sort.hq.bam\"}' " \
                   "{txt_in} > {txt_out}".format(
                                         txt_in=txt_in,
