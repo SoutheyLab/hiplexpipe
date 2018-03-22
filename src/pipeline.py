@@ -91,7 +91,7 @@ def make_pipeline_map(state):
         name='total_reads',
         input=output_from('align_bwa'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
-        output='/metrics/summary/{sample[0]}.total_raw_reads.txt')
+        output='metrics/summary/{sample[0]}.total_raw_reads.txt')
 
     pipeline.collate(
         task_func=stages.generate_stats,
