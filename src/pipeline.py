@@ -113,6 +113,7 @@ def make_pipeline_map(state):
         add_inputs=add_inputs(['all_sample.summary.txt'],
         output='.txt',
         extras=['passed.sample.summary.txt'])
+    
     return pipeline
     
 def make_pipeline_call(state):
