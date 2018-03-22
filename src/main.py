@@ -21,6 +21,7 @@ from state import State
 from logger import Logger
 from pipeline import make_pipeline_map
 from pipeline import make_pipeline_process
+from pipeline import make_pipeline_call
 
 import error_codes
 
@@ -42,7 +43,7 @@ def parse_command_line():
         default=DEFAULT_JOBSCRIPT_DIR,
         help='Directory to store cluster job scripts created by the ' \
              'pipeline, defaults to {}'.format(DEFAULT_JOBSCRIPT_DIR))
-    parser.add_argument('--mode', type=str, default='map', choices=['map', 'process'],  help='set to "map" to process fastq files up to haplotype caller, or "process" to process multiple map directories.  Default is map')
+    parser.add_argument('--mode', type=str, default='map', choices=['map', 'call', 'process'],  help='set to "map" to run bwa and generate stats files, "call" to run undr_rover and haplotypecaller on a map directory, or "process" to process multiple map/call directories into a final combined vcf.  Default is map')
     parser.add_argument('--version', action='version',
         version='%(prog)s ' + version)
     return parser.parse_args()
@@ -73,7 +74,9 @@ def main():
                   drmaa_session=drmaa_session)
     
     # Build the pipeline workflow
-    if options.mode == 'process':
+    if options.mode == 'call':
+        pipeline = make_pipeline_call(state)
+    else if options.mode == 'process':
         pipeline = make_pipeline_process(state)
     else:
         pipeline = make_pipeline_map(state)

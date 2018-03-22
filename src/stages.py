@@ -9,7 +9,6 @@ as config, options, DRMAA and the logger.
 
 import os
 import math
-from utils import safe_make_dir
 from runner import run_stage
 
 
@@ -57,10 +56,6 @@ class Stages(object):
         self.dbscsnv = self.get_options('vep_dbscsnv')
         self.cadd = self.get_options('vep_cadd')
 
-    def run_picard(self, stage, args):
-        mem = int(self.state.config.get_stage_options(stage, 'mem'))
-        return run_java(self.state, stage, self.picard_jar, mem, args)
-
     def run_gatk(self, stage, args):
         mem = int(self.state.config.get_stage_options(stage, 'mem'))
         return run_java(self.state, stage, self.gatk_jar, mem, args)
@@ -83,12 +78,15 @@ class Stages(object):
         '''grab the fastq files to map'''
         pass
 
-    def apply_undr_rover(self, inputs, vcf_output, sample_id):
+    def passed_filter_files(self, output):
+        '''grab the list of files that passed filters for the next round of processing'''
+        pass
+
+    def apply_undr_rover(self, input, vcf_output, sample_id):
         '''Apply undr_rover to call variants from paired end fastq files'''
-        fastq_read1_in, fastq_read2_in = inputs
+        fastq_read1_in = '/fastqs/' + input[:-20] +'_R1.fastq.gz'
+        fastq_read2_in = '/fastqs/' + input[:-20] +'_R2.fastq.gz' 
         cores = self.get_stage_options('apply_undr_rover', 'cores')
-        safe_make_dir('variants/undr_rover')
-        safe_make_dir('variants/undr_rover/coverdir')
         coverdir = "variants/undr_rover/coverdir"
         coverfile = sample_id + ".coverage"
 
@@ -125,7 +123,6 @@ class Stages(object):
         '''Align the paired end fastq files to the reference genome using bwa'''
         fastq_read1_in, fastq_read2_in = inputs
         cores = self.get_stage_options('align_bwa', 'cores')
-        safe_make_dir('alignments')
         read_group = '"@RG\\tID:{sample}\\tSM:{sample}\\tPU:lib1\\tPL:Illumina"' \
             .format(sample=sample_id)
         
@@ -133,7 +130,6 @@ class Stages(object):
             primer_bedpe_file = self.primer_bedpe_file_QC
         else: 
             primer_bedpe_file = self.primer_bedpe_file_default
-
 
         command = 'bwa mem -M -t {cores} -R {read_group} {reference} {fastq_read1} {fastq_read2} ' \
                   '| {bamclipper} -i -p {primer_bedpe_file} -n {cores} ' \
@@ -149,30 +145,8 @@ class Stages(object):
                           bam=bam_out)
         run_stage(self.state, 'align_bwa', command)
 
-#    def sort_bam_picard(self, bam_in, sorted_bam_out):
-#        '''Sort the BAM file using Picard'''
-#        picard_args = 'SortSam INPUT={bam_in} OUTPUT={sorted_bam_out} ' \
-#                      'VALIDATION_STRINGENCY=LENIENT SORT_ORDER=coordinate ' \
-#                      'MAX_RECORDS_IN_RAM=5000000 CREATE_INDEX=True'.format(
-#                          bam_in=bam_in, sorted_bam_out=sorted_bam_out)
-#        self.run_picard('sort_bam_picard', picard_args)
-
-#    def primary_bam(self, bam_in, sbam_out):
-#        '''Only keep primary alignments in the BAM file using samtools'''
-#        command = 'samtools view -h -q 1 -f 2 -F 4 -F 8 -F 256 -b ' \
-#                    '-o {sbam_out} {bam_in}'.format(
-#                        bam_in=bam_in, sbam_out=sbam_out)
-#        run_stage(self.state, 'primary_bam', command)
-
-#   def index_sort_bam_picard(self, bam_in, bam_index):
-#        '''Index sorted bam using samtools'''
-#        command = 'samtools index {bam_in} {bam_index}'.format(bam_in=bam_in,
-#                                                               bam_index=bam_index)
-#        run_stage(self.state, 'index_sort_bam_picard', command)
-
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
-        safe_make_dir('variants/gatk')
         cores = self.get_stage_options('call_haplotypecaller_gatk', 'cores')
         gatk_args = "-T HaplotypeCaller -R {reference} --min_base_quality_score 20 " \
                     "--emitRefConfidence GVCF " \
@@ -248,7 +222,7 @@ class Stages(object):
                     "-G_filter \"g.isHetNonRef() == 1\" " \
                     "-G_filterName \"HetNonRef\" " \
                     "-G_filter \"g.isHet() == 1 && g.isHetNonRef() != 1 && " \
-                    "1.0 * AD[vc.getAlleleIndex(g.getAlleles().1)] / (DP * 1.0) < 0.25\" " \
+                    "1.0 * AD[vc.getAlleleIndex(g.getAlleles().1)] / (DP * 1.0) < 0.2\" " \
                     "-G_filterName \"AltFreqLow\" " \
                     "-G_filter \"DP < 50.0\" " \
                     "-G_filterName \"LowDP\"".format(reference=self.reference,
@@ -389,9 +363,17 @@ class Stages(object):
                         bam_in=bam_in, txt_out=txt_out)
         run_stage(self.state, 'total_reads', command)
 
+    def filter_stats(self, txt_in, txt_out):
+        '''run a filter on all.summary.txt to determine which files to further process'''
+        command = "awk 'BEGIN{FS=\"\t\"}{if($11 < 90.0){" \
+                  "print $1\".clipped.sort.hq.bam\"}' " \
+                  "{txt_in} > {txt_out}".format(
+                                        txt_in=txt_in,
+                                        txt_out=txt_out)
+        run_stage(self.state, 'filter_stats', command)        
+
     def generate_amplicon_metrics(self, bam_in, txt_out, sample):
         '''Generate depth information for each amplicon and sample for heatmap plotting'''
-        safe_make_dir('alignments/metrics')
         command = 'bedtools coverage -f 5E-1 -a {bed_intervals} -b {bam_in} | ' \
                   'sed "s/$/	{sample}/g" > {txt_out}'.format(bed_intervals=self.interval_file,
                                                             bam_in=bam_in,
@@ -458,9 +440,6 @@ class Stages(object):
         run_stage(self.state, 'index_final_vcf', command)
 
 
-    def processed_directories(self, out):
-        ''' directories to be processes'''
-        pass
 
 
 
