@@ -38,7 +38,6 @@ class Stages(object):
         self.primer_bedpe_file_default = self.get_options('primer_bedpe_file_default')  # Bamclipper primer file
         self.primer_bedpe_file_QC = self.get_options('primer_bedpe_file_QC')  # Bamclipper primer file for QC plates
         # Programs and program settings
-        self.picard_jar = self.get_options('picard_jar')
         self.gatk_jar = self.get_options('gatk_jar')
         self.bamclipper = self.get_options('bamclipper')
         self.proportionthresh = self.get_options('proportionthresh')
