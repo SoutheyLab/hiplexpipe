@@ -76,7 +76,7 @@ def main():
     # Build the pipeline workflow
     if options.mode == 'call':
         pipeline = make_pipeline_call(state)
-    else if options.mode == 'process':
+    elif options.mode == 'process':
         pipeline = make_pipeline_process(state)
     else:
         pipeline = make_pipeline_map(state)
