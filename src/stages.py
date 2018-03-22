@@ -84,8 +84,8 @@ class Stages(object):
 
     def apply_undr_rover(self, input, vcf_output, sample_id):
         '''Apply undr_rover to call variants from paired end fastq files'''
-        fastq_read1_in = '/fastqs/' + input[:-20] +'_R1.fastq.gz'
-        fastq_read2_in = '/fastqs/' + input[:-20] +'_R2.fastq.gz' 
+        fastq_read1_in = '/fastqs/' + input[:-20] +'_R1_001.fastq.gz'
+        fastq_read2_in = '/fastqs/' + input[:-20] +'_R2_001.fastq.gz' 
         cores = self.get_stage_options('apply_undr_rover', 'cores')
         coverdir = "variants/undr_rover/coverdir"
         coverfile = sample_id + ".coverage"
