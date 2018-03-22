@@ -128,7 +128,7 @@ def make_pipeline_call(state):
    
     pipeline.originate(
         task_func=stages.passed_filter_files,
-        name='passed_filter_files'
+        name='passed_filter_files',
         output=passed_files)
 
     # Call variants using undr_rover
