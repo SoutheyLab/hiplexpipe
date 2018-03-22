@@ -77,6 +77,10 @@ class Stages(object):
         '''grab the fastq files to map'''
         pass
 
+    def grab_summary_file(self, output):
+        '''grab the summary file to parse'''
+        pass
+    
     def passed_filter_files(self, output):
         '''grab the list of files that passed filters for the next round of processing'''
         pass
@@ -362,14 +366,14 @@ class Stages(object):
                         bam_in=bam_in, txt_out=txt_out)
         run_stage(self.state, 'total_reads', command)
 
-    def filter_stats(self, inputs, txt_out, final_file):
-        '''run a filter on all.summary.txt to determine which files to further process'''
-        dummy_in, [summary_file] = inputs
+    
+    def filter_stats(self, input, output):
+        '''run a filter on all_sample.summary.txt to determine which files to further process'''
         command = "awk 'BEGIN{FS=\"\t\"}{if($11 < 85.00){" \
                   "print $1\".clipped.sort.hq.bam\"}' " \
                   "{summary_file} > {final_file}".format(
-                                        summary_file=summary_file,
-                                        final_file=final_file)
+                                        summary_file=input,
+                                        final_file=output)
         run_stage(self.state, 'filter_stats', command)        
 
     def generate_amplicon_metrics(self, bam_in, txt_out, sample):

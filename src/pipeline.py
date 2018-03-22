@@ -11,9 +11,6 @@ def make_pipeline_map(state):
     '''Build the pipeline by constructing stages and connecting them together'''
     # Build an empty pipeline
     pipeline = Pipeline(name='hiplexpipe')
-    # Get a list of paths to all the FASTQ files
-    #fastq_files = state.config.get_option('fastqs')
-    fastq_files = glob.glob('fastqs/*')
     # Stages are dependent on the state
     stages = Stages(state)
 
@@ -23,6 +20,8 @@ def make_pipeline_map(state):
     safe_make_dir('metrics/summary')
 
     # The original FASTQ files
+    fastq_files = glob.glob('fastqs/*')
+
     # This is a dummy stage. It is useful because it makes a node in the
     # pipeline graph, and gives the pipeline an obvious starting point.
     pipeline.originate(
@@ -102,14 +101,18 @@ def make_pipeline_map(state):
         output=r'all_sample.summary.\1.txt',
         extras=[r'\1', 'all_sample.summary.txt'])
     
+    summary_file = 'all_sample.summary.txt'	 
+
+    pipeline.originate(
+        task_func=stages.grab_summary_file,
+        name='grab_summary_file',
+        output=summary_file)  
+ 
     pipeline.transform(
         task_func=stages.filter_stats,
         name='filter_stats',
-        input=output_from('generate_stats'),
-        filter=suffix('.txt'),
-        add_inputs=add_inputs(['all_sample.summary.txt']),
-        output='.txt',
-        extras=['passed.sample.summary.txt'])
+        input=output_from('grab_summary_file'),
+        filter=suffix('.summary.txt'),
     
     return pipeline
     
