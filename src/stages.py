@@ -87,9 +87,8 @@ class Stages(object):
 
     def apply_undr_rover(self, input, vcf_output, sample_id):
         '''Apply undr_rover to call variants from paired end fastq files'''
-        fastq_read1_in = '/fastqs/' + input + '_R1_001.fastq.gz'
-        fastq_read2_in = '/fastqs/' + input + '_R2_001.fastq.gz' 
-        cores = self.get_stage_options('apply_undr_rover', 'cores')
+        fastq_read1_in = 'fastqs/' + input[:-20] + '_R1_001.fastq.gz'
+        fastq_read2_in = 'fastqs/' + input[:-20] + '_R2_001.fastq.gz' 
         coverdir = "variants/undr_rover/coverdir"
         coverfile = sample_id + ".coverage"
 
@@ -371,7 +370,7 @@ class Stages(object):
     def filter_stats(self, txt_in, txt_out):
         '''run a filter on all_sample.summary.txt to determine which files to further process'''
         #awk '{if($11 >= 85){print $1".clipped.sort.hq.bam"}}' all_sample.summary.txt > temp.txt
-        awk_comm = "{if($11 >= 85){print $1}}"
+        awk_comm = "{if($11 >= 85){print $1\".clipped.sort.hq.bam\"}}"
         command = "awk '{awk_comm}' {summary_file} > {final_file}".format(
                                         awk_comm=awk_comm,
                                         summary_file=txt_in,
