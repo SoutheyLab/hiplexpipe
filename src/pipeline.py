@@ -143,7 +143,7 @@ def make_pipeline_call(state):
         input=output_from('passed_filter_files'),
         # Match the R1 (read 1) FASTQ file and grab the path and sample name.
         # This will be the first input to the stage.
-        filter=formatter('(?P<sample>[a-zA-Z0-9_-]+).clipped.sorted.hq.bam'),
+        filter=formatter('(?P<sample>[a-zA-Z0-9_-]+)'),
         output='variants/undr_rover/{sample[0]}.vcf')
     
     #### concatenate undr_rover vcfs ####
@@ -167,7 +167,7 @@ def make_pipeline_call(state):
         task_func=stages.call_haplotypecaller_gatk,
         name='call_haplotypecaller_gatk',
         input=output_from('passed_filter_files'),
-        filter=formatter('(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
+        filter=formatter('(?P<sample>[a-zA-Z0-9-_]+)'),
         output='variants/gatk/{sample[0]}.g.vcf')
 
     return pipeline

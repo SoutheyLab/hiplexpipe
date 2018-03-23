@@ -87,8 +87,8 @@ class Stages(object):
 
     def apply_undr_rover(self, input, vcf_output, sample_id):
         '''Apply undr_rover to call variants from paired end fastq files'''
-        fastq_read1_in = '/fastqs/' + input[:-20] +'_R1_001.fastq.gz'
-        fastq_read2_in = '/fastqs/' + input[:-20] +'_R2_001.fastq.gz' 
+        fastq_read1_in = '/fastqs/' + input + '_R1_001.fastq.gz'
+        fastq_read2_in = '/fastqs/' + input + '_R2_001.fastq.gz' 
         cores = self.get_stage_options('apply_undr_rover', 'cores')
         coverdir = "variants/undr_rover/coverdir"
         coverfile = sample_id + ".coverage"
@@ -150,6 +150,7 @@ class Stages(object):
 
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
+        in_file = bam_in + '.clipped.sort.hq.bam'
         cores = self.get_stage_options('call_haplotypecaller_gatk', 'cores')
         gatk_args = "-T HaplotypeCaller -R {reference} --min_base_quality_score 20 " \
                     "--emitRefConfidence GVCF " \
@@ -168,7 +169,7 @@ class Stages(object):
                     "-A TandemRepeatAnnotator -A VariantType " \
                     "-nct {cores} " \
                     "-I {bam} -L {interval_list} -o {out}".format(reference=self.reference,
-                                                                  bam=bam_in,
+                                                                  bam=in_file,
                                                                   interval_list=self.interval_file,
                                                                   out=vcf_out, cores=cores)
         self.run_gatk('call_haplotypecaller_gatk', gatk_args)
