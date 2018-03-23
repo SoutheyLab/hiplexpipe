@@ -143,7 +143,7 @@ def make_pipeline_call(state):
         input=output_from('passed_filter_files'),
         # Match the R1 (read 1) FASTQ file and grab the path and sample name.
         # This will be the first input to the stage.
-        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
+        filter=formatter('alignments/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
         output='variants/undr_rover/{sample[0]}.vcf')
     
     #### concatenate undr_rover vcfs ####
