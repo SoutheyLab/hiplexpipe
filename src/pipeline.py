@@ -103,11 +103,13 @@ def make_pipeline_map(state):
     
     summary_file = 'all_sample.summary.txt'	 
 
-    pipeline.originate(
+    (pipeline.originate(
         task_func=stages.grab_summary_file,
         name='grab_summary_file',
         output=summary_file)  
- 
+        .follows('generate_stats'))
+
+
     pipeline.transform(
         task_func=stages.filter_stats,
         name='filter_stats',
