@@ -85,7 +85,7 @@ class Stages(object):
         '''grab the list of files that passed filters for the next round of processing'''
         pass
 
-    def apply_undr_rover(self, input, vcf_output):
+    def apply_undr_rover(self, input, vcf_output, sample_id):
         '''Apply undr_rover to call variants from paired end fastq files'''
         fastq_read1_in = 'fastqs/' + input[11:-20] + '_R1_001.fastq.gz'
         fastq_read2_in = 'fastqs/' + input[11:-20] + '_R2_001.fastq.gz' 

@@ -144,8 +144,9 @@ def make_pipeline_call(state):
         # Match the R1 (read 1) FASTQ file and grab the path and sample name.
         # This will be the first input to the stage.
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
-        output='variants/undr_rover/{sample[0]}.vcf')
-    
+        output='variants/undr_rover/{sample[0]}.vcf',
+        extras=['{sample[0]}'])   
+ 
     #### concatenate undr_rover vcfs ####
     pipeline.transform(
         task_func=stages.sort_vcfs,
@@ -169,7 +170,7 @@ def make_pipeline_call(state):
         input=output_from('passed_filter_files'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
         output='variants/gatk/{sample[0]}.g.vcf')
-
+    
     return pipeline
 
 def make_pipeline_process(state):
