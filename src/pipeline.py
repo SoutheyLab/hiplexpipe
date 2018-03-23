@@ -122,7 +122,7 @@ def make_pipeline_map(state):
 def make_pipeline_call(state):
     #this part of the pipeline will take the summary results of "map" and turn them into gatk and undr_rover vcfs
     pipeline = Pipeline(name='hiplexpipe')
-    with open("passed.sample.summary.txt", 'r') as inputf:
+    with open("all_sample.passed.summary.txt", 'r') as inputf:
         passed_files = inputf.read().split('\n')
     stages = Stages(state)
 
