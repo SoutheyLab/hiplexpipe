@@ -167,7 +167,7 @@ def make_pipeline_call(state):
         task_func=stages.call_haplotypecaller_gatk,
         name='call_haplotypecaller_gatk',
         input=output_from('passed_filter_files'),
-        filter=formatter('(?P<sample>[a-zA-Z0-9-_]+)'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
         output='variants/gatk/{sample[0]}.g.vcf')
 
     return pipeline

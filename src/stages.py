@@ -149,7 +149,6 @@ class Stages(object):
 
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
-        in_file = bam_in + '.clipped.sort.hq.bam'
         cores = self.get_stage_options('call_haplotypecaller_gatk', 'cores')
         gatk_args = "-T HaplotypeCaller -R {reference} --min_base_quality_score 20 " \
                     "--emitRefConfidence GVCF " \
@@ -168,7 +167,7 @@ class Stages(object):
                     "-A TandemRepeatAnnotator -A VariantType " \
                     "-nct {cores} " \
                     "-I {bam} -L {interval_list} -o {out}".format(reference=self.reference,
-                                                                  bam=in_file,
+                                                                  bam=bam_in,
                                                                   interval_list=self.interval_file,
                                                                   out=vcf_out, cores=cores)
         self.run_gatk('call_haplotypecaller_gatk', gatk_args)
