@@ -367,11 +367,12 @@ class Stages(object):
         run_stage(self.state, 'total_reads', command)
 
     
-    def filter_stats(self, input, output):
+    def filter_stats(self, txt_in, txt_out):
         '''run a filter on all_sample.summary.txt to determine which files to further process'''
-        command = 'awk \'\{if($11 < 85\.00)\{print $1\".clipped.sort.hq.bam\"\}\}\' {summary_file} > {final_file}'.format(
-                                        summary_file=input,
-                                        final_file=output)
+        #awk '{if($11 >= 85){print $1".clipped.sort.hq.bam"}}' all_sample.summary.txt > temp.txt
+        command = "awk \'\{if($11 >= 85)\{print $1\".clipped.sort.hq.bam\"\}\}\' {summary_file} > {final_file}".format(
+                                        summary_file=txt_in,
+                                        final_file=txt_out)
         run_stage(self.state, 'filter_stats', command)        
 
     def generate_amplicon_metrics(self, bam_in, txt_out, sample):
