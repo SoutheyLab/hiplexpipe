@@ -370,7 +370,9 @@ class Stages(object):
     def filter_stats(self, txt_in, txt_out):
         '''run a filter on all_sample.summary.txt to determine which files to further process'''
         #awk '{if($11 >= 85){print $1".clipped.sort.hq.bam"}}' all_sample.summary.txt > temp.txt
-        command = "awk '{if($11 >= 85){print $1}}' {summary_file} > {final_file}".format(
+        awk_comm = "{if($11 >= 85){print $1}}"
+        command = "awk '{awk_comm}' {summary_file} > {final_file}".format(
+                                        awk_comm=awk_comm,
                                         summary_file=txt_in,
                                         final_file=txt_out)
         run_stage(self.state, 'filter_stats', command)        
