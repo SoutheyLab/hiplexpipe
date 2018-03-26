@@ -399,14 +399,15 @@ class Stages(object):
             elif inputfile.endswith('.total_raw_reads.txt'):
                 d = inputfile
         e = samplename
-        command = 'Rscript --vanilla /projects/vh83/pipelines/code/modified_summary_stat.R ' \
+        command = 'touch {txt_out};  Rscript --vanilla /projects/vh83/pipelines/code/modified_summary_stat.R ' \
                   '{hist_in} {map_genome_in} {map_target_in} {raw_reads_in} {sample_name} ' \
-                  '{txt_out}'.format(hist_in=a,
+                  '{summary_out}'.format(txt_out=txt_out,
+                                      hist_in=a,
                                       map_genome_in=b,
                                       map_target_in=c,
                                       raw_reads_in=d ,
                                       sample_name=e ,
-                                      txt_out=joint_output)
+                                      summary_out=joint_output)
         run_stage(self.state, 'generate_stats', command)
 
     def sort_vcfs(self, vcf_in, vcf_out):
