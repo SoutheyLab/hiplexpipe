@@ -333,6 +333,12 @@ class Stages(object):
 
     def intersect_bed(self, bam_in, bam_out):
         '''intersect the bed file with the interval file '''
+        
+        if "QC" in bam_in: 
+            interval_file = self.interval_file_QC 
+        else:  
+            interval_file = self.interval_file
+
         command = "intersectBed -abam {bam_in} -b {interval_file} > {bam_out} " \
                 .format(bam_in=bam_in,
                         interval_file=self.interval_file,
@@ -341,6 +347,12 @@ class Stages(object):
 
     def coverage_bed(self, bam_in, txt_out):
         ''' make coverage files '''
+        
+        if "QC" in bam_in:
+            interval_file = self.interval_file_QC
+        else:
+            interval_file = self.interval_file
+
         command = "coverageBed -b {bam_in} -a {interval_file} -hist | grep all > {txt_out}" \
                 .format(bam_in=bam_in,
                         interval_file=self.interval_file,
@@ -364,7 +376,6 @@ class Stages(object):
         command = 'samtools view -c {bam_in} > {txt_out}'.format(
                         bam_in=bam_in, txt_out=txt_out)
         run_stage(self.state, 'total_reads', command)
-
     
     def filter_stats(self, txt_in, txt_out, txt_out2):
         '''run a filter on all_sample.summary.txt to determine which files to further process'''
