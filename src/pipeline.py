@@ -115,8 +115,9 @@ def make_pipeline_map(state):
         name='filter_stats',
         input=output_from('grab_summary_file'),
         filter=suffix('.summary.txt'),
-        output='.passed.summary.txt')
-        extras=['all_sample.failed.summary.txt'] 
+        output='.passed.summary.txt',
+        extras=['all_sample.failed.summary.txt'])
+ 
     return pipeline
     
 def make_pipeline_call(state):
