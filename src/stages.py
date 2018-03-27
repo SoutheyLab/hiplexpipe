@@ -393,6 +393,12 @@ class Stages(object):
 
     def generate_amplicon_metrics(self, bam_in, txt_out, sample):
         '''Generate depth information for each amplicon and sample for heatmap plotting'''
+     
+        if "QC" in bam_in:
+            interval_file = self.interval_file_QC
+        else:
+            interval_file = self.interval_file
+
         command = 'bedtools coverage -f 5E-1 -a {bed_intervals} -b {bam_in} | ' \
                   'sed "s/$/	{sample}/g" > {txt_out}'.format(bed_intervals=self.interval_file,
                                                             bam_in=bam_in,
