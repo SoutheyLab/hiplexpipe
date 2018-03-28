@@ -341,7 +341,7 @@ class Stages(object):
 
         command = "intersectBed -abam {bam_in} -b {interval_file} > {bam_out} " \
                 .format(bam_in=bam_in,
-                        interval_file=self.interval_file,
+                        interval_file=interval_file,
                         bam_out=bam_out)
         run_stage(self.state, 'intersect_bed', command)
 
@@ -355,7 +355,7 @@ class Stages(object):
 
         command = "coverageBed -b {bam_in} -a {interval_file} -hist | grep all > {txt_out}" \
                 .format(bam_in=bam_in,
-                        interval_file=self.interval_file,
+                        interval_file=interval_file,
                         txt_out=txt_out)
         run_stage(self.state, 'coverage_bed', command)
 
@@ -400,7 +400,7 @@ class Stages(object):
             interval_file = self.interval_file
 
         command = 'bedtools coverage -f 5E-1 -a {bed_intervals} -b {bam_in} | ' \
-                  'sed "s/$/	{sample}/g" > {txt_out}'.format(bed_intervals=self.interval_file,
+                  'sed "s/$/	{sample}/g" > {txt_out}'.format(bed_intervals=interval_file,
                                                             bam_in=bam_in,
                                                             sample=sample,
                                                             txt_out=txt_out)
