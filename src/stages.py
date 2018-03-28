@@ -150,6 +150,12 @@ class Stages(object):
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
         cores = self.get_stage_options('call_haplotypecaller_gatk', 'cores')
+        
+        if "QC" in bam_in:
+            interval_file = self.interval_file_QC
+        else:
+            interval_file = self.interval_file
+
         gatk_args = "-T HaplotypeCaller -R {reference} --min_base_quality_score 20 " \
                     "--emitRefConfidence GVCF " \
                     "-A AlleleBalance -A AlleleBalanceBySample " \
@@ -168,7 +174,7 @@ class Stages(object):
                     "-nct {cores} " \
                     "-I {bam} -L {interval_list} -o {out}".format(reference=self.reference,
                                                                   bam=bam_in,
-                                                                  interval_list=self.interval_file,
+                                                                  interval_list=interval_file,
                                                                   out=vcf_out, cores=cores)
         self.run_gatk('call_haplotypecaller_gatk', gatk_args)
 
