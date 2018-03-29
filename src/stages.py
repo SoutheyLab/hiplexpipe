@@ -27,9 +27,8 @@ def run_java(state, stage, jar_path, mem, args):
 
 
 class Stages(object):
-    def __init__(self, state, qcstatus=False):
+    def __init__(self, state):
         self.state = state
-        self.qcstatus = qcstatus
         # Reference genome and interval files
         self.reference = self.get_options('ref_grch37')
         self.interval_file = self.get_options('interval_file')
@@ -152,7 +151,7 @@ class Stages(object):
         '''Call variants using GATK'''
         cores = self.get_stage_options('call_haplotypecaller_gatk', 'cores')
         
-        if qcstatus is True:
+        if "QC" in bam_in:
             interval_file = self.interval_file_QC
         else:
             interval_file = self.interval_file

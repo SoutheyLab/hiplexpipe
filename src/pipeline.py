@@ -127,10 +127,7 @@ def make_pipeline_call(state):
     with open("all_sample.passed.summary.txt", 'r') as inputf:
         passed_files = inputf.read().split('\n')
     
-    if any("QC" in string for string in passed_files):
-        stages = Stages(state=state, qcstatus=True)
-    else:
-        stages = Stages(state=state, qcstatus=False)
+        stages = Stages(state)
 
     safe_make_dir('variants')
     safe_make_dir('variants/gatk')
