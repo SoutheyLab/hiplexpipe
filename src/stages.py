@@ -27,8 +27,9 @@ def run_java(state, stage, jar_path, mem, args):
 
 
 class Stages(object):
-    def __init__(self, state):
+    def __init__(self, state, qcstatus=False):
         self.state = state
+        self.qcstatus = qcstatus
         # Reference genome and interval files
         self.reference = self.get_options('ref_grch37')
         self.interval_file = self.get_options('interval_file')

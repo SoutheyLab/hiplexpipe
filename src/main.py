@@ -32,8 +32,6 @@ DEFAULT_JOBSCRIPT_DIR = 'jobscripts'
 DEFAULT_CONFIG_FILE = 'pipeline.config'
 
 
-qcstatus=False
-
 def parse_command_line():
     '''Parse the command line arguments of the pipeline'''
     parser = cmdline.get_argparse(description='A variant discovery pipeline',
