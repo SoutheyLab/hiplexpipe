@@ -151,7 +151,7 @@ class Stages(object):
         '''Call variants using GATK'''
         cores = self.get_stage_options('call_haplotypecaller_gatk', 'cores')
         
-        if "QC" in bam_in:
+        if qcstatus is True:
             interval_file = self.interval_file_QC
         else:
             interval_file = self.interval_file

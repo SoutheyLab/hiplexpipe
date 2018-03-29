@@ -123,8 +123,13 @@ def make_pipeline_map(state):
 def make_pipeline_call(state):
     #this part of the pipeline will take the summary results of "map" and turn them into gatk and undr_rover vcfs
     pipeline = Pipeline(name='hiplexpipe')
+    
     with open("all_sample.passed.summary.txt", 'r') as inputf:
         passed_files = inputf.read().split('\n')
+    
+    if any("QC" in string for string in passed_files):
+        global qcstatus=True 
+
     stages = Stages(state)
 
     safe_make_dir('variants')
