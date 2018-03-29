@@ -128,7 +128,8 @@ def make_pipeline_call(state):
         passed_files = inputf.read().split('\n')
     
     if any("QC" in string for string in passed_files):
-        global qcstatus=True 
+        global qcstatus
+        qcstatus=True 
 
     stages = Stages(state)
 
