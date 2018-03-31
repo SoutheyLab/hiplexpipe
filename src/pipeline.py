@@ -197,12 +197,18 @@ def make_pipeline_process(state):
         task_func=stages.glob_gatk,
         name='glob_gatk',
         output=gatk_files)
+   
     
+ 
     #Dummy stage to grab the undr rover files
     pipeline.originate(
         task_func=stages.glob_undr_rover,
         name='glob_undr_rover',
         output=undr_rover_files)
+    
+    safe_make_dir('variants')
+    safe_make_dir('variants/gatk')
+    safe_make_dir('variants/undr_rover')
 
     pipeline.merge(
         task_func=stages.concatenate_vcfs,
