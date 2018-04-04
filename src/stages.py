@@ -171,7 +171,7 @@ class Stages(object):
                     "-A SampleList -A SpanningDeletions " \
                     "-A StrandBiasBySample -A StrandOddsRatio " \
                     "-A TandemRepeatAnnotator -A VariantType " \
-                    "-nct {cores} " \
+                    "-nct {cores} --dontUseSoftClippedBases " \
                     "-I {bam} -L {interval_list} -o {out}".format(reference=self.reference,
                                                                   bam=bam_in,
                                                                   interval_list=interval_file,
