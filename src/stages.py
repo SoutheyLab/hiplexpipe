@@ -149,8 +149,7 @@ class Stages(object):
 
     def call_haplotypecaller_gatk(self, bam_in, vcf_out):
         '''Call variants using GATK'''
-        cores = self.get_stage_options('call_haplotypecaller_gatk', 'cores')
-        
+        bamout = vcf_out + "bamout"
         if "QC" in bam_in:
             interval_file = self.interval_file_QC
         else:
@@ -171,11 +170,11 @@ class Stages(object):
                     "-A SampleList -A SpanningDeletions " \
                     "-A StrandBiasBySample -A StrandOddsRatio " \
                     "-A TandemRepeatAnnotator -A VariantType " \
-                    "-nct {cores} --dontUseSoftClippedBases " \
+                    "--dontUseSoftClippedBases --bamout {bamout} " \
                     "-I {bam} -L {interval_list} -o {out}".format(reference=self.reference,
                                                                   bam=bam_in,
                                                                   interval_list=interval_file,
-                                                                  out=vcf_out, cores=cores)
+                                                                  out=vcf_out, bamout=bamout)
         self.run_gatk('call_haplotypecaller_gatk', gatk_args)
 
     # Write as collate
