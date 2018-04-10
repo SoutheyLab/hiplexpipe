@@ -127,7 +127,7 @@ def make_pipeline_call(state):
     with open("all_sample.passed.summary.txt", 'r') as inputf:
         passed_files = inputf.read().split('\n')
     
-        stages = Stages(state)
+    stages = Stages(state)
 
     safe_make_dir('variants')
     safe_make_dir('variants/gatk')
