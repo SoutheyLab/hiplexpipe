@@ -147,9 +147,8 @@ class Stages(object):
                           bam=bam_out)
         run_stage(self.state, 'align_bwa', command)
 
-    def call_haplotypecaller_gatk(self, bam_in, vcf_out):
+    def call_haplotypecaller_gatk(self, bam_in, vcf_out, bamout):
         '''Call variants using GATK'''
-        bamout = vcf_out + "bamout"
         if "QC" in bam_in:
             interval_file = self.interval_file_QC
         else:
@@ -170,7 +169,7 @@ class Stages(object):
                     "-A SampleList -A SpanningDeletions " \
                     "-A StrandBiasBySample -A StrandOddsRatio " \
                     "-A TandemRepeatAnnotator -A VariantType " \
-                    "--dontUseSoftClippedBases --bamout {bamout} " \
+                    "--dontUseSoftClippedBases -bamout {bamout} " \
                     "-I {bam} -L {interval_list} -o {out}".format(reference=self.reference,
                                                                   bam=bam_in,
                                                                   interval_list=interval_file,
