@@ -129,10 +129,10 @@ def make_pipeline_call(state):
     
         stages = Stages(state)
 
-    safe_make_dir('variants')
-    safe_make_dir('variants/gatk')
-    safe_make_dir('variants/undr_rover')
-    safe_make_dir('variants/undr_rover/coverdir') 
+    safe_make_dir('variants_pass')
+    safe_make_dir('variants_pass/gatk')
+    safe_make_dir('variants_pass/undr_rover')
+    safe_make_dir('variants_pass/undr_rover/coverdir') 
    
     pipeline.originate(
         task_func=stages.passed_filter_files,
@@ -142,26 +142,26 @@ def make_pipeline_call(state):
     # Call variants using undr_rover
     pipeline.transform(
         task_func=stages.apply_undr_rover,
-        name='apply_undr_rover',
+        name='apply_undr_rover_pass',
         input=output_from('passed_filter_files'),
         # Match the R1 (read 1) FASTQ file and grab the path and sample name.
         # This will be the first input to the stage.
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
-        output='variants/undr_rover/{sample[0]}.vcf',
+        output='variants_pass/undr_rover/{sample[0]}.vcf',
         extras=['{sample[0]}'])   
  
     #### concatenate undr_rover vcfs ####
     pipeline.transform(
         task_func=stages.sort_vcfs,
-        name='sort_vcfs',
-        input=output_from('apply_undr_rover'),
-        filter=formatter('variants/undr_rover/(?P<sample>[a-zA-Z0-9_-]+).vcf'),
-        output='variants/undr_rover/{sample[0]}.sorted.vcf.gz')
+        name='sort_vcfs_pass',
+        input=output_from('apply_undr_rover_pass'),
+        filter=formatter('variants_passed/undr_rover/(?P<sample>[a-zA-Z0-9_-]+).vcf'),
+        output='variants_pass/undr_rover/{sample[0]}.sorted.vcf.gz')
 
     pipeline.transform(
         task_func=stages.index_vcfs,
-        name='index_vcfs',
-        input=output_from('sort_vcfs'),
+        name='index_vcfs_pass',
+        input=output_from('sort_vcfs_pass'),
         filter=suffix('.sorted.vcf.gz'),
         output='.sorted.vcf.gz.tbi')
 
@@ -169,11 +169,67 @@ def make_pipeline_call(state):
     # Call variants using GATK
     pipeline.transform(
         task_func=stages.call_haplotypecaller_gatk,
-        name='call_haplotypecaller_gatk',
+        name='call_haplotypecaller_gatk_pass',
         input=output_from('passed_filter_files'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
-        output='variants/gatk/{sample[0]}.g.vcf')
+        output='variants_pass/gatk/{sample[0]}.g.vcf')
     
+    
+
+    ##################################
+    # deal with the failed files too #
+    ##################################
+
+with open("all_sample.failed.summary.txt", 'r') as inputf:
+        failed_files = inputf.read().split('\n')
+
+        stages = Stages(state)
+
+    safe_make_dir('variants_fail')
+    safe_make_dir('variants_fail/gatk')
+    safe_make_dir('variants_fail/undr_rover')
+    safe_make_dir('variants_fail/undr_rover/coverdir')
+
+    pipeline.originate(
+        task_func=stages.failed_filter_files,
+        name='failed_filter_files',
+        output=failed_files)
+
+    # Call variants using undr_rover
+    pipeline.transform(
+        task_func=stages.apply_undr_rover,
+        name='apply_undr_rover_fail',
+        input=output_from('passed_filter_files'),
+        # Match the R1 (read 1) FASTQ file and grab the path and sample name.
+        # This will be the first input to the stage.
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
+        output='variants_fail/undr_rover/{sample[0]}.vcf',
+        extras=['{sample[0]}'])
+
+    #### concatenate undr_rover vcfs ####
+    pipeline.transform(
+        task_func=stages.sort_vcfs,
+        name='sort_vcfs_fail',
+        input=output_from('apply_undr_rover_fail'),
+        filter=formatter('variants/undr_rover/(?P<sample>[a-zA-Z0-9_-]+).vcf'),
+        output='variants_fail/undr_rover/{sample[0]}.sorted.vcf.gz')
+
+    pipeline.transform(
+        task_func=stages.index_vcfs,
+        name='index_vcfs_fail',
+        input=output_from('sort_vcfs_fail'),
+        filter=suffix('.sorted.vcf.gz'),
+        output='.sorted.vcf.gz.tbi')
+
+    ###### GATK VARIANT CALLING ######
+    # Call variants using GATK
+    pipeline.transform(
+        task_func=stages.call_haplotypecaller_gatk,
+        name='call_haplotypecaller_gatk_fail',
+        input=output_from('passed_filter_files'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
+        output='variants_fail/gatk/{sample[0]}.g.vcf')
+
     return pipeline
 
 def make_pipeline_process(state):
@@ -182,12 +238,17 @@ def make_pipeline_process(state):
     # Get a list of paths to all the directories to be combined for variant calling
     run_directories = state.config.get_option('runs')
     #grab files from each of the processed directories in "runs"
-    gatk_files = []
-    undr_rover_files = []
+    gatk_files_pass = []
+    undr_rover_files_pass = []
+    gatk_files_fail = []
+    undr_rover_files_fail = []
     for directory in run_directories:
-        gatk_files.extend(glob.glob(directory + '/variants/gatk/*.g.vcf'))
-        undr_rover_files.extend(glob.glob(directory + '/variants/undr_rover/*sorted.vcf.gz'))
-    
+        gatk_files_pass.extend(glob.glob(directory + '/variants_pass/gatk/*.g.vcf'))
+        undr_rover_files_pass.extend(glob.glob(directory + '/variants_pass/undr_rover/*sorted.vcf.gz'))
+        gatk_files_fail.extend(glob.glob(directory + '/variants_fail/gatk/*.g.vcf'))
+        undr_rover_files_fail.extend(glob.glob(directory + '/variants_fail/undr_rover/*sorted.vcf.gz'))
+
+
     # Stages are dependent on the state
     stages = Stages(state)
 
@@ -195,30 +256,28 @@ def make_pipeline_process(state):
     # pipeline graph, and gives the pipeline an obvious starting point.
     pipeline.originate(
         task_func=stages.glob_gatk,
-        name='glob_gatk',
-        output=gatk_files)
+        name='glob_gatk_pass',
+        output=gatk_files_pass)
    
-    
- 
     #Dummy stage to grab the undr rover files
     pipeline.originate(
         task_func=stages.glob_undr_rover,
-        name='glob_undr_rover',
-        output=undr_rover_files)
+        name='glob_undr_rover_pass',
+        output=undr_rover_files_pass)
     
-    safe_make_dir('variants')
-    safe_make_dir('variants/gatk')
-    safe_make_dir('variants/undr_rover')
+    safe_make_dir('variants_pass')
+    safe_make_dir('variants_pass/gatk')
+    safe_make_dir('variants_pass/undr_rover')
 
     pipeline.merge(
         task_func=stages.concatenate_vcfs,
-        name='concatenate_vcfs',
-        input=output_from('glob_undr_rover'),
-        output='variants/undr_rover/combined_undr_rover.vcf.gz')
+        name='concatenate_vcfs_pass',
+        input=output_from('glob_undr_rover_pass'),
+        output='variants_pass/undr_rover/combined_undr_rover.vcf.gz')
 
     pipeline.transform(
         task_func=stages.index_final_vcf,
-        name='index_final_vcf',
+        name='index_final_vcf_pass',
         input=output_from('concatenate_vcfs'),
         filter=suffix('.vcf.gz'),
         output='.vcf.gz.tbi')
@@ -226,58 +285,148 @@ def make_pipeline_process(state):
     # Combine G.VCF files for all samples using GATK
     pipeline.merge(
         task_func=stages.combine_gvcf_gatk,
-        name='combine_gvcf_gatk',
-        input=output_from('glob_gatk'),
-        output='ALL.combined.vcf')
+        name='combine_gvcf_gatk_pass',
+        input=output_from('glob_gatk_pass'),
+        output='variants_pass/gatk/ALL.combined.vcf')
 
     # Genotype G.VCF files using GATK
     pipeline.transform(
         task_func=stages.genotype_gvcf_gatk,
-        name='genotype_gvcf_gatk',
-        input=output_from('combine_gvcf_gatk'),
+        name='genotype_gvcf_gatk_pass',
+        input=output_from('combine_gvcf_gatk_pass'),
         filter=suffix('.combined.vcf'),
         output='.raw.vcf')
 
     # Apply GT filters to genotyped vcf
     pipeline.transform(
         task_func=stages.genotype_filter_gatk,
-        name='genotype_filter_gatk',
-        input=output_from('genotype_gvcf_gatk'),
+        name='genotype_filter_gatk_pass',
+        input=output_from('genotype_gvcf_gatk_pass'),
         filter=suffix('.raw.vcf'),
         output='.raw.gt-filter.vcf')
 
     # Decompose and normalise multiallelic sites
     pipeline.transform(
         task_func=stages.vt_decompose_normalise,
-        name='vt_decompose_normalise',
-        input=output_from('genotype_filter_gatk'),
+        name='vt_decompose_normalise_pass',
+        input=output_from('genotype_filter_gatk_pass'),
         filter=suffix('.raw.gt-filter.vcf'),
         output='.raw.gt-filter.decomp.norm.vcf')
 
     # Annotate VCF file using GATK
     pipeline.transform(
         task_func=stages.variant_annotator_gatk,
-        name='variant_annotator_gatk',
-        input=output_from('vt_decompose_normalise'),
+        name='variant_annotator_gatk_pass',
+        input=output_from('vt_decompose_normalise_pass'),
         filter=suffix('.raw.gt-filter.decomp.norm.vcf'),
         output='.raw.gt-filter.decomp.norm.annotate.vcf')
 
     # Filter vcf
     pipeline.transform(
         task_func=stages.gatk_filter,
-        name='gatk_filter',
-        input=output_from('variant_annotator_gatk'),
+        name='gatk_filter_pass',
+        input=output_from('variant_annotator_gatk_pass'),
         filter=suffix('.raw.gt-filter.decomp.norm.annotate.vcf'),
         output='.raw.gt-filter.decomp.norm.annotate.filter.vcf')
-
       
    #Apply VEP
     (pipeline.transform(
         task_func=stages.apply_vep,
-        name='apply_vep',
-        input=output_from('gatk_filter'),
+        name='apply_vep_pass',
+        input=output_from('gatk_filter_pass'),
         filter=suffix('.raw.gt-filter.decomp.norm.annotate.filter.vcf'),
-        add_inputs=add_inputs(['variants/undr_rover/combined_undr_rover.vcf.gz']),
+        add_inputs=add_inputs(['variants_pass/undr_rover/combined_undr_rover.vcf.gz']),
+        output='.raw.gt-filter.decomp.norm.annotate.filter.vep.vcf')
+        .follows('index_final_vcf'))
+
+   ############## this is the failed section ########################## 
+    # Stages are dependent on the state
+    stages = Stages(state)
+
+    # This is a dummy stage. It is useful because it makes a node in the
+    # pipeline graph, and gives the pipeline an obvious starting point.
+    pipeline.originate(
+        task_func=stages.glob_gatk,
+        name='glob_gatk_fail',
+        output=gatk_files_fail)
+   
+    #Dummy stage to grab the undr rover files
+    pipeline.originate(
+        task_func=stages.glob_undr_rover,
+        name='glob_undr_rover_fail',
+        output=undr_rover_files_fail)
+    
+    safe_make_dir('variants_fail')
+    safe_make_dir('variants_fail/gatk')
+    safe_make_dir('variants_fail/undr_rover')
+
+    pipeline.merge(
+        task_func=stages.concatenate_vcfs,
+        name='concatenate_vcfs_fail',
+        input=output_from('glob_undr_rover_fail'),
+        output='variants_fail/undr_rover/combined_undr_rover.vcf.gz')
+
+    pipeline.transform(
+        task_func=stages.index_final_vcf,
+        name='index_final_vcf_fail',
+        input=output_from('concatenate_vcfs_fail'),
+        filter=suffix('.vcf.gz'),
+        output='.vcf.gz.tbi')
+    
+    # Combine G.VCF files for all samples using GATK
+    pipeline.merge(
+        task_func=stages.combine_gvcf_gatk,
+        name='combine_gvcf_gatk_fail',
+        input=output_from('glob_gatk_fail'),
+        output='variants_fail/gatk/ALL.combined.vcf')
+
+    # Genotype G.VCF files using GATK
+    pipeline.transform(
+        task_func=stages.genotype_gvcf_gatk,
+        name='genotype_gvcf_gatk_fail',
+        input=output_from('combine_gvcf_gatk_fail'),
+        filter=suffix('.combined.vcf'),
+        output='.raw.vcf')
+
+    # Apply GT filters to genotyped vcf
+    pipeline.transform(
+        task_func=stages.genotype_filter_gatk,
+        name='genotype_filter_gatk_fail',
+        input=output_from('genotype_gvcf_gatk_fail'),
+        filter=suffix('.raw.vcf'),
+        output='.raw.gt-filter.vcf')
+
+    # Decompose and normalise multiallelic sites
+    pipeline.transform(
+        task_func=stages.vt_decompose_normalise,
+        name='vt_decompose_normalise_fail',
+        input=output_from('genotype_filter_gatk_fail'),
+        filter=suffix('.raw.gt-filter.vcf'),
+        output='.raw.gt-filter.decomp.norm.vcf')
+
+    # Annotate VCF file using GATK
+    pipeline.transform(
+        task_func=stages.variant_annotator_gatk,
+        name='variant_annotator_gatk_fail',
+        input=output_from('vt_decompose_normalise_fail'),
+        filter=suffix('.raw.gt-filter.decomp.norm.vcf'),
+        output='.raw.gt-filter.decomp.norm.annotate.vcf')
+
+    # Filter vcf
+    pipeline.transform(
+        task_func=stages.gatk_filter,
+        name='gatk_filter_fail',
+        input=output_from('variant_annotator_gatk_fail'),
+        filter=suffix('.raw.gt-filter.decomp.norm.annotate.vcf'),
+        output='.raw.gt-filter.decomp.norm.annotate.filter.vcf')
+      
+   #Apply VEP
+    (pipeline.transform(
+        task_func=stages.apply_vep,
+        name='apply_vep_fail',
+        input=output_from('gatk_filter_fail'),
+        filter=suffix('.raw.gt-filter.decomp.norm.annotate.filter.vcf'),
+        add_inputs=add_inputs(['variants_fail/undr_rover/combined_undr_rover.vcf.gz']),
         output='.raw.gt-filter.decomp.norm.annotate.filter.vep.vcf')
         .follows('index_final_vcf'))
 

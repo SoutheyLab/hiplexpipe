@@ -44,6 +44,12 @@ class Stages(object):
         self.absthresh = self.get_options('absthresh')
         self.maxvariants = self.get_options('maxvariants')
         self.other_vep = self.get_options('other_vep')
+        #coverage cutoffs for failed samples
+        self.percent_cutoff_for_sample_fail = self.get_options('percent_cutoff_for_sample_fail')
+        self.coverage_cutoff_for_sample_fail = self.get_options('coverage_cutoff_for_sample_fail') 
+        #LowDP filter cutoffs
+        self.lowDP_cutoff = self.get_options('lowDP_cutoff')
+        self.alt_allele_freq_cutoff = self.get_options('alt_allele_freq_cutoff') 
         # Annotation resources
         self.dbsnp_b37 = self.get_options('dbsnp_b37')
         self.brcaex = self.get_options('vep_brcaex')
@@ -82,6 +88,10 @@ class Stages(object):
         pass
     
     def passed_filter_files(self, output):
+        '''grab the list of files that passed filters for the next round of processing'''
+        pass
+    
+    def failed_filter_files(self, output):
         '''grab the list of files that passed filters for the next round of processing'''
         pass
 
@@ -230,10 +240,12 @@ class Stages(object):
                     "-G_filter \"g.isHetNonRef() == 1\" " \
                     "-G_filterName \"HetNonRef\" " \
                     "-G_filter \"g.isHet() == 1 && g.isHetNonRef() != 1 && " \
-                    "1.0 * AD[vc.getAlleleIndex(g.getAlleles().1)] / (DP * 1.0) < 0.2\" " \
+                    "1.0 * AD[vc.getAlleleIndex(g.getAlleles().1)] / (DP * 1.0) < {alt_allele_freq_cutoff}\" " \
                     "-G_filterName \"AltFreqLow\" " \
-                    "-G_filter \"DP < 50.0\" " \
+                    "-G_filter \"DP < {lowDP_cutoff}\" " \
                     "-G_filterName \"LowDP\"".format(reference=self.reference,
+                                                     alt_allele_freq_cutoff=self.alt_allele_freq_cutoff, 
+                                                     lowDP_cutoff=self.lowDP_cutoff,
                                                      vcf_in=vcf_in,
                                                      vcf_out=vcf_out)
         self.run_gatk('genotype_filter_gatk', gatk_args)
@@ -385,11 +397,12 @@ class Stages(object):
     
     def filter_stats(self, txt_in, txt_out, txt_out2):
         '''run a filter on all_sample.summary.txt to determine which files to further process'''
-        #awk '{if($11 >= 85){print $1".clipped.sort.hq.bam"}}' all_sample.summary.txt > temp.txt
-        awk_comm = "{if($11 >= 80){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}"
-        awk_comm2 = "{if($11 < 80){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}"
+        awk_comm = "{if({coverage_cutoff_for_sample_fail} >= {percent_cutoff_for_sample_fail}){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}".format(coverage_cutoff_for_sample_fail=self.coverage_cutoff_for_sample_fail, percent_cutoff_for_sample_fail=self.percent_cutoff_for_sample_fail)
+        awk_comm2 = "{if({coverage_cutoff_for_sample_fail} < {percent_cutoff_for_sample_fail}){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}".format(coverage_cutoff_for_sample_fail=self.coverage_cutoff_for_sample_fail, percent_cutoff_for_sample_fail=self.percent_cutoff_for_sample_fail)
+        
         #make up awk command and then pass it to grep to remove intra and inter plate controls from final haplotype caller list 
-        command = "awk '{awk_comm}' {summary_file} | grep -v -e X4336 -e _R_ > {final_file}; awk '{awk_comm2}' {summary_file} > {final_file2}; grep -e X4336 -e _R_ {summary_file} >> {final_file2}".format(
+        #command = "awk '{awk_comm}' {summary_file} | grep -v -e X4336 -e _R_ > {final_file}; awk '{awk_comm2}' {summary_file} > {final_file2}; grep -e X4336 -e _R_ {summary_file} >> {final_file2}".format(
+        command = "awk '{awk_comm}' {summary_file} | grep -v -e X4336 -e _R_ > {final_file}; awk '{awk_comm2}' {summary_file} > {final_file2}".format(
                                         awk_comm=awk_comm, 
                                         awk_comm2=awk_comm2,
                                         summary_file=txt_in,
