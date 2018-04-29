@@ -180,10 +180,10 @@ def make_pipeline_call(state):
     # deal with the failed files too #
     ##################################
 
-with open("all_sample.failed.summary.txt", 'r') as inputf:
+    with open("all_sample.failed.summary.txt", 'r') as inputf:
         failed_files = inputf.read().split('\n')
 
-        stages = Stages(state)
+    stages = Stages(state)
 
     safe_make_dir('variants_fail')
     safe_make_dir('variants_fail/gatk')
