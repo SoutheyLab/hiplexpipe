@@ -397,8 +397,12 @@ class Stages(object):
     
     def filter_stats(self, txt_in, txt_out, txt_out2):
         '''run a filter on all_sample.summary.txt to determine which files to further process'''
-        awk_comm = "{if({coverage_cutoff_for_sample_fail} >= {percent_cutoff_for_sample_fail}){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}".format(coverage_cutoff_for_sample_fail=self.coverage_cutoff_for_sample_fail, percent_cutoff_for_sample_fail=self.percent_cutoff_for_sample_fail)
-        awk_comm2 = "{if({coverage_cutoff_for_sample_fail} < {percent_cutoff_for_sample_fail}){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}".format(coverage_cutoff_for_sample_fail=self.coverage_cutoff_for_sample_fail, percent_cutoff_for_sample_fail=self.percent_cutoff_for_sample_fail)
+        
+        co_fail=self.coverage_cutoff_for_sample_fail
+        pc_fail=self.percent_cutoff_for_sample_fail
+
+        awk_comm = "{if(" + str(co_fail) + " >= " + str(pc_fail) + "){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}"
+        awk_comm2 = "{if(" + str(co_fail) + " < " + str(pc_fail) + "){print \"alignments/\"$1\".clipped.sort.hq.bam\"}}"
         
         #make up awk command and then pass it to grep to remove intra and inter plate controls from final haplotype caller list 
         #command = "awk '{awk_comm}' {summary_file} | grep -v -e X4336 -e _R_ > {final_file}; awk '{awk_comm2}' {summary_file} > {final_file2}; grep -e X4336 -e _R_ {summary_file} >> {final_file2}".format(
@@ -486,7 +490,11 @@ class Stages(object):
 
 
 
-
+    def filter_ur_vcf(self, vcf_in, vcf_out):
+        command = 'vt view -h -f \"INFO.NP > 5 && INFO.PCT > 20.0\" {vcf_in} | \
+                   python {reformat_ur_py_path} {vcf_out}'.format(vcf_in=vcf_in, vcf_out=vcf_out, 
+                                                                  reformat_ur_py_path=self.reformat_ur_py_path)
+                                        
 
 
 
