@@ -199,7 +199,7 @@ def make_pipeline_call(state):
     pipeline.transform(
         task_func=stages.apply_undr_rover,
         name='apply_undr_rover_fail',
-        input=output_from('passed_filter_files'),
+        input=output_from('failed_filter_files'),
         # Match the R1 (read 1) FASTQ file and grab the path and sample name.
         # This will be the first input to the stage.
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).clipped.sort.hq.bam'),
