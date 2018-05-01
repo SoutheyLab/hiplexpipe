@@ -211,7 +211,7 @@ def make_pipeline_call(state):
         task_func=stages.sort_vcfs,
         name='sort_vcfs_fail',
         input=output_from('apply_undr_rover_fail'),
-        filter=formatter('variants/undr_rover/(?P<sample>[a-zA-Z0-9_-]+).vcf'),
+        filter=formatter('variants_fail/undr_rover/(?P<sample>[a-zA-Z0-9_-]+).vcf'),
         output='variants_fail/undr_rover/{sample[0]}.sorted.vcf.gz')
 
     pipeline.transform(
