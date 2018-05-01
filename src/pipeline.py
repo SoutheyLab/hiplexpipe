@@ -155,7 +155,7 @@ def make_pipeline_call(state):
         task_func=stages.sort_vcfs,
         name='sort_vcfs_pass',
         input=output_from('apply_undr_rover_pass'),
-        filter=formatter('variants_passed/undr_rover/(?P<sample>[a-zA-Z0-9_-]+).vcf'),
+        filter=formatter('variants_pass/undr_rover/(?P<sample>[a-zA-Z0-9_-]+).vcf'),
         output='variants_pass/undr_rover/{sample[0]}.sorted.vcf.gz')
 
     pipeline.transform(
@@ -226,7 +226,7 @@ def make_pipeline_call(state):
     pipeline.transform(
         task_func=stages.call_haplotypecaller_gatk,
         name='call_haplotypecaller_gatk_fail',
-        input=output_from('passed_filter_files'),
+        input=output_from('failed_filter_files'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9-_]+).clipped.sort.hq.bam'),
         output='variants_fail/gatk/{sample[0]}.g.vcf')
 
