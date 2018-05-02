@@ -99,7 +99,7 @@ class Stages(object):
         '''Apply undr_rover to call variants from paired end fastq files'''
         fastq_read1_in = 'fastqs/' + input[11:-20] + '_R1_001.fastq.gz'
         fastq_read2_in = 'fastqs/' + input[11:-20] + '_R2_001.fastq.gz' 
-        coverdir = "variants/undr_rover/coverdir"
+        coverdir = "variants_pass/undr_rover/coverdir"
         coverfile = sample_id + ".coverage"
 
         if "QC" in fastq_read1_in:
@@ -130,6 +130,44 @@ class Stages(object):
                         fastq_read1=fastq_read1_in,
                         fastq_read2=fastq_read2_in)
         run_stage(self.state, 'apply_undr_rover', command)
+
+    def apply_undr_rover_fail(self, input, vcf_output, sample_id):
+        '''Apply undr_rover to call variants from paired end fastq files'''
+        fastq_read1_in = 'fastqs/' + input[11:-20] + '_R1_001.fastq.gz'
+        fastq_read2_in = 'fastqs/' + input[11:-20] + '_R2_001.fastq.gz'
+        coverdir = "variants_fail/undr_rover/coverdir"
+        coverfile = sample_id + ".coverage"
+
+        if "QC" in fastq_read1_in:
+            primer_file = self.primer_file_QC
+            interval_file = self.interval_file_QC
+        else:
+            primer_file = self.primer_file_default
+            interval_file = self.interval_file
+
+        command = 'undr_rover --primer_coords {coord_file} ' \
+                  '--primer_sequences {primer_file} ' \
+                  '--reference {reference} ' \
+                  '--out {vcf_output} ' \
+                  '--coverfile {coverdir}/{coverfile} ' \
+                  '--proportionthresh {proportionthresh} ' \
+                  '--absthresh {absthresh} ' \
+                  '--max_variants {maxvariants} ' \
+                  '--fast --snvthresh 10 ' \
+                  '{fastq_read1} {fastq_read2}'.format(
+                        coord_file=interval_file, primer_file=primer_file,
+                        reference=self.reference,
+                        vcf_output=vcf_output,
+                        coverdir=coverdir,
+                        proportionthresh=self.proportionthresh,
+                        absthresh=self.absthresh,
+                        maxvariants=self.maxvariants,
+                        coverfile=coverfile,
+                        fastq_read1=fastq_read1_in,
+                        fastq_read2=fastq_read2_in)
+        run_stage(self.state, 'apply_undr_rover_fail', command)
+
+
 
     def align_bwa(self, inputs, bam_out, sample_id, lib):
         '''Align the paired end fastq files to the reference genome using bwa'''

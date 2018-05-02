@@ -197,7 +197,7 @@ def make_pipeline_call(state):
 
     # Call variants using undr_rover
     pipeline.transform(
-        task_func=stages.apply_undr_rover,
+        task_func=stages.apply_undr_rover_fail,
         name='apply_undr_rover_fail',
         input=output_from('failed_filter_files'),
         # Match the R1 (read 1) FASTQ file and grab the path and sample name.
