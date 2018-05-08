@@ -297,12 +297,12 @@ def make_pipeline_process(state):
         filter=suffix('.filter.reformat.vcf.gz'),
         output='.filter.reformat.sort.vcf.gz')
 
-     pipeline.transform(
-         task_func=stages.index_final_vcf,
-         name='index_sorted_vcf',
-         input=output_from('sort_under_rover_vcf'),
-         filter=suffix('.vcf.gz'),
-         output='.vcg.gz.tbi')
+    pipeline.transform(
+        task_func=stages.index_final_vcf,
+        name='index_sorted_vcf',
+        input=output_from('sort_under_rover_vcf'),
+        filter=suffix('.vcf.gz'),
+        output='.vcg.gz.tbi')
 
     (pipeline.transform(
         task_func=stages.genotype_filter_gatk,
