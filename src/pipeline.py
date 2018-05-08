@@ -278,7 +278,7 @@ def make_pipeline_process(state):
     pipeline.transform(
         task_func=stages.index_final_vcf,
         name='index_final_vcf_pass',
-        input=output_from('concatenate_vcfs'),
+        input=output_from('concatenate_vcfs_pass'),
         filter=suffix('.vcf.gz'),
         output='.vcf.gz.tbi')
    
