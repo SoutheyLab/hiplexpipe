@@ -366,7 +366,7 @@ def make_pipeline_process(state):
         filter=suffix('.raw.gt-filter.decomp.norm.annotate.filter.vcf'),
         add_inputs=add_inputs(['variants_pass/undr_rover/combined_undr_rover.vcf.gz']),
         output='.raw.gt-filter.decomp.norm.annotate.filter.vep.vcf')
-        .follows('index_final_vcfi_pass'))
+        .follows('index_final_vcf_pass'))
 
    ############## this is the failed section ########################## 
     # Stages are dependent on the state
