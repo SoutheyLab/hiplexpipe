@@ -532,7 +532,7 @@ class Stages(object):
         command = 'vt view -h -f \"INFO.NP > 5 && INFO.PCT > 20.0\" {vcf_in} | \
                    python {reformat_ur_py_path} {vcf_out}'.format(vcf_in=vcf_in, vcf_out=vcf_out, 
                                                                   reformat_ur_py_path=self.reformat_ur_py_path)
-                                        
+        run_stage(self.state, 'filter_ur_vcf', command)                               
 
 
 
