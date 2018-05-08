@@ -297,20 +297,36 @@ def make_pipeline_process(state):
         filter=suffix('.filter.reformat.vcf.gz'),
         output='.filter.reformat.sort.vcf.gz')
 
-    pipeline.transform(
+     pipeline.transform(
+         task_func=stages.index_final_vcf,
+         name='index_sorted_vcf',
+         input=output_from('sort_under_rover_vcf'),
+         filter=suffix('.vcf.gz'),
+         output='.vcg.gz.tbi')
+
+    (pipeline.transform(
         task_func=stages.genotype_filter_gatk,
         name='apply_gt_filter_ur',
         input=output_from('sort_under_rover_vcf'),
         filter=suffix('.filter.reformat.sort.vcf.gz'),
         output='.filter.reformat.sort.gt-filter.vcf.gz')
+        .follows('index_sorted_vcf'))
 
     pipeline.transform(
+         task_func=stages.index_final_vcf,
+         name='index_filter_gt_vcf',
+         input=output_from('apply_gt_filter_ur'),
+         filter=suffix('.vcf.gz'),
+         output='.vcg.gz.tbi')
+
+    (pipeline.transform(
         task_func=stages.apply_vep,
         name='vep_annotate_ur_vcf',
         input=output_from('apply_gt_filter_ur'),
         filter=suffix('.filter.reformat.sort.gt-filter.vcf.gz'),
         output='.filter.reformat.sort.gt-filter.vep.vcf.gz')
- 
+        .follows('index_filter_gt_vcf'))
+
     # Combine G.VCF files for all samples using GATK
     pipeline.merge(
         task_func=stages.combine_gvcf_gatk,
