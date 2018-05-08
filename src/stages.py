@@ -44,6 +44,7 @@ class Stages(object):
         self.absthresh = self.get_options('absthresh')
         self.maxvariants = self.get_options('maxvariants')
         self.other_vep = self.get_options('other_vep')
+        self.reformat_ur_py_path = self.get_options('reformat_ur_py_path')
         #coverage cutoffs for failed samples
         self.percent_cutoff_for_sample_fail = self.get_options('percent_cutoff_for_sample_fail')
         self.coverage_cutoff_for_sample_fail = self.get_options('coverage_cutoff_for_sample_fail') 
