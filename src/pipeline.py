@@ -320,7 +320,7 @@ def make_pipeline_process(state):
          output='.vcg.gz.tbi')
 
     (pipeline.transform(
-        task_func=stages.apply_vep,
+        task_func=stages.apply_vep_UR,
         name='vep_annotate_ur_vcf',
         input=output_from('apply_gt_filter_ur'),
         filter=suffix('.filter.reformat.sort.gt-filter.vcf.gz'),

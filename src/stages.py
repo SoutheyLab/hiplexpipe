@@ -388,6 +388,42 @@ class Stages(object):
                                             undr_rover_vcf=undr_rover_vcf)
         run_stage(self.state, 'apply_vep', vep_command)
 
+    def apply_vep_UR(self, vcf_in, vcf_out):
+        '''Apply VEP'''
+        cores = self.get_stage_options('apply_vep', 'cores')
+        vep_command = "vep --cache --dir_cache {other_vep} " \
+                      "--assembly GRCh37 --refseq --offline " \
+                      "--fasta {reference} " \
+                      "--sift b --polyphen b --symbol --numbers --biotype " \
+                      "--total_length --hgvs --format vcf " \
+                      "--vcf --force_overwrite --flag_pick --no_stats " \
+                      "--custom {brcaexpath},brcaex,vcf,exact,0,Clinical_significance_ENIGMA," \
+                      "Comment_on_clinical_significance_ENIGMA,Date_last_evaluated_ENIGMA," \
+                      "Pathogenicity_expert,HGVS_cDNA,HGVS_Protein,BIC_Nomenclature " \
+                      "--custom {gnomadpath},gnomAD,vcf,exact,0,AF_NFE,AN_NFE " \
+                      "--custom {revelpath},RVL,vcf,exact,0,REVEL_SCORE " \
+                      "--plugin MaxEntScan,{maxentscanpath} " \
+                      "--plugin ExAC,{exacpath},AC,AN " \
+                      "--plugin dbNSFP,{dbnsfppath},REVEL_score,REVEL_rankscore " \
+                      "--plugin dbscSNV,{dbscsnvpath} " \
+                      "--plugin CADD,{caddpath} " \
+                      "--fork {cores} " \
+                      "-i {vcf_in} " \
+                      "-o {vcf_out}".format(other_vep=self.other_vep,
+                                            cores=cores,
+                                            vcf_out=vcf_out,
+                                            vcf_in=vcf_in,
+                                            reference=self.reference,
+                                            brcaexpath=self.brcaex,
+                                            gnomadpath=self.gnomad,
+                                            revelpath=self.revel,
+                                            maxentscanpath=self.maxentscan,
+                                            exacpath=self.exac,
+                                            dbnsfppath=self.dbnsfp,
+                                            dbscsnvpath=self.dbscsnv,
+                                            caddpath=self.cadd,
+     run_stage(self.state, 'apply_vep_UR', vep_command)
+
     def intersect_bed(self, bam_in, bam_out):
         '''intersect the bed file with the interval file '''
         
