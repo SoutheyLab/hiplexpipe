@@ -422,7 +422,7 @@ class Stages(object):
                                             dbnsfppath=self.dbnsfp,
                                             dbscsnvpath=self.dbscsnv,
                                             caddpath=self.cadd,
-     run_stage(self.state, 'apply_vep_UR', vep_command)
+        run_stage(self.state, 'apply_vep_UR', vep_command)
 
     def intersect_bed(self, bam_in, bam_out):
         '''intersect the bed file with the interval file '''
