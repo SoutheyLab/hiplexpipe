@@ -421,7 +421,7 @@ class Stages(object):
                                             exacpath=self.exac,
                                             dbnsfppath=self.dbnsfp,
                                             dbscsnvpath=self.dbscsnv,
-                                            caddpath=self.cadd,
+                                            caddpath=self.cadd)
         run_stage(self.state, 'apply_vep_UR', vep_command)
 
     def intersect_bed(self, bam_in, bam_out):
