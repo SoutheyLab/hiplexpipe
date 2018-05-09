@@ -324,7 +324,7 @@ def make_pipeline_process(state):
         name='vep_annotate_ur_vcf',
         input=output_from('apply_gt_filter_ur'),
         filter=suffix('.filter.reformat.sort.gt-filter.vcf.gz'),
-        output='.filter.reformat.sort.gt-filter.vep.vcf.gz')
+        output='.filter.reformat.sort.gt-filter.vep.vcf')
         .follows('index_filter_gt_vcf'))
 
     # Combine G.VCF files for all samples using GATK
@@ -460,7 +460,7 @@ def make_pipeline_process(state):
         name='vep_annotate_ur_vcf_fail',
         input=output_from('apply_gt_filter_ur_fail'),
         filter=suffix('.filter.reformat.sort.gt-filter.vcf.gz'),
-        output='.filter.reformat.sort.gt-filter.vep.vcf.gz')
+        output='.filter.reformat.sort.gt-filter.vep.vcf')
         .follows('index_filter_gt_vcf_fail')) 
 
     # Combine G.VCF files for all samples using GATK
